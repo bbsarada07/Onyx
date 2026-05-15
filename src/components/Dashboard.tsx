@@ -28,10 +28,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast }) => {
   const [statusIndex, setStatusIndex] = useState(0);
 
   const statusMessages = [
-    'Initializing Senior Regulatory Analyst...',
-    'Parsing RBI Circular text...',
-    'Extracting compliance mandates...',
-    'Orchestrator assigning departments...'
+    'Initializing Onyx Intelligence...',
+    'Onyx parsing RBI Circular text...',
+    'Onyx extracting compliance mandates...',
+    'Onyx orchestrating department routing...'
   ];
 
   useEffect(() => {

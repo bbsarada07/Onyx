@@ -835,10 +835,7 @@ const OnyxDashboard: React.FC = () => {
       {/* Sidebar */}
       <aside className={`w-64 h-full flex flex-col z-50 transition-colors duration-700 ${isDark ? 'bg-slate-950' : 'bg-white border-r border-slate-100 shadow-xl'}`}>
         <div className="p-8 flex items-center gap-3">
-          <div className={`w-8 h-8 rounded-full border-[1.5px] flex items-center justify-center ${isDark ? 'border-white/40' : 'border-slate-300'}`}>
-            <div className={`w-3 h-3 rounded-full ${isDark ? 'bg-white' : 'bg-slate-900'}`}></div>
-          </div>
-          <span className={`text-lg font-bold tracking-[0.25em] uppercase font-outfit ${isDark ? 'text-white' : 'text-slate-900'}`}>Onyx</span>
+          <img src="/onyx_logo.png" alt="Onyx Logo" className="w-auto h-12 object-contain" />
         </div>
 
         <nav className="flex-1 px-4 mt-4 space-y-1">
