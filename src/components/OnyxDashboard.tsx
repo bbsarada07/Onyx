@@ -28,27 +28,33 @@ const SidebarIcon = ({ icon: Icon, active = false, label, onClick, isDark = true
   <button
     type="button"
     onClick={onClick}
-    className={`w-full flex items-center gap-4 px-8 py-3.5 relative transition-all duration-200 group rounded-none cursor-pointer ${
+    className={`w-full flex items-center gap-4 px-8 py-3.5 relative transition-all duration-300 ease-in-out group rounded-none cursor-pointer ${
       active 
         ? (isDark ? 'bg-white/5 text-white font-semibold' : 'bg-black/5 text-slate-950 font-semibold')
-        : (isDark ? 'bg-transparent text-slate-400 hover:text-white' : 'bg-transparent text-slate-400 hover:text-slate-900')
+        : (isDark ? 'bg-transparent text-white/40 hover:text-white/80' : 'bg-transparent text-slate-950/40 hover:text-slate-950/80')
     }`}
   >
     {active && (
       <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-cyan-500 dark:bg-cyan-400" />
     )}
-    <Icon className={`w-4 h-4 transition-colors ${
+    <Icon className={`w-4 h-4 transition-colors duration-300 ${
       active 
         ? (isDark ? 'text-white' : 'text-slate-950') 
-        : (isDark ? 'text-slate-400 group-hover:text-white' : 'text-slate-400 group-hover:text-slate-900')
+        : (isDark ? 'text-white/40 group-hover:text-white/80' : 'text-slate-950/40 group-hover:text-slate-950/80')
     }`} />
     <span className="text-[13px] tracking-tight">{label}</span>
   </button>
 );
 
-const OnyxDashboard: React.FC = () => {
+interface OnyxDashboardProps {
+  isDarkProp?: boolean;
+  setIsDarkProp?: (isDark: boolean) => void;
+  userRole?: string;
+}
+
+const OnyxDashboard: React.FC<OnyxDashboardProps> = ({ isDarkProp, setIsDarkProp, userRole = 'Compliance Officer' }) => {
   const [activeTab, setActiveTab] = useState('Home');
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(isDarkProp !== undefined ? isDarkProp : true);
   const [searchFocused, setSearchFocused] = useState(false);
   const [toast, setToast] = useState<{ message: string, visible: boolean }>({ message: '', visible: false });
 
@@ -58,9 +64,24 @@ const OnyxDashboard: React.FC = () => {
   };
 
   useEffect(() => {
+    if (isDarkProp !== undefined) {
+      setIsDark(isDarkProp);
+    }
+  }, [isDarkProp]);
+
+  useEffect(() => {
     if (isDark) document.documentElement.classList.add('dark');
     else document.documentElement.classList.remove('dark');
   }, [isDark]);
+
+  const handleToggleDark = () => {
+    const nextDark = !isDark;
+    if (setIsDarkProp) {
+      setIsDarkProp(nextDark);
+    } else {
+      setIsDark(nextDark);
+    }
+  };
 
   const navItems = [
     { label: 'Home', icon: Home },
@@ -141,7 +162,7 @@ const OnyxDashboard: React.FC = () => {
                   </div>
                   <button 
                     type="button"
-                    onClick={() => setIsDark(!isDark)}
+                    onClick={handleToggleDark}
                     className={`w-12 h-6 rounded-none relative transition-all duration-300 ${isDark ? 'bg-white' : 'bg-slate-200'}`}
                   >
                     <motion.div 
@@ -177,9 +198,9 @@ const OnyxDashboard: React.FC = () => {
   };
 
   return (
-    <div className={`flex h-screen w-full ${isDark ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-slate-900'} font-sans overflow-hidden transition-colors duration-700`}>
+    <div className={`flex h-screen w-full ${isDark ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-slate-900'} font-sans overflow-hidden transition-all duration-300 ease-in-out`}>
       {/* Sidebar */}
-      <aside className={`relative w-64 h-full flex flex-col z-50 transition-colors duration-700 border-r ${isDark ? 'bg-[#0D0D0D] border-neutral-800/80' : 'bg-white border-gray-200/60'}`}>
+      <aside className={`relative w-64 h-screen flex flex-col z-50 transition-all duration-300 ease-in-out border-r ${isDark ? 'bg-[#0D0D0D] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'}`}>
         <div className="p-8 flex items-center gap-3">
           <img src="/onyx_logo.png" alt="Onyx Logo" className="w-auto h-12 object-contain" />
         </div>
@@ -198,17 +219,21 @@ const OnyxDashboard: React.FC = () => {
         </nav>
 
         <div className="p-6 mt-auto space-y-4">
-          <div className={`flex items-center gap-3 p-3 rounded-none border ${isDark ? 'bg-white/5 border-neutral-800/80' : 'bg-slate-50 border-gray-200/60'}`}>
+          <div className={`flex items-center gap-3 p-3 rounded-none border ${isDark ? 'bg-white/5 border-[#1F1F1F]' : 'bg-slate-50 border-[#E2E8F0]'}`}>
             <img src="https://i.pravatar.cc/150?u=arjun-m" alt="Avatar" className="w-9 h-9 rounded-full object-cover grayscale brightness-125" />
             <div className="flex-1 overflow-hidden">
               <p className={`text-[13px] font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>Arjun Dev</p>
-              <p className="text-[9px] text-slate-500 flex items-center gap-1.5 uppercase tracking-wider">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> Premium Plan
+              <p className="text-[9px] text-slate-500 flex items-center gap-1.5 uppercase tracking-wider font-semibold">
+                <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                  userRole === 'Compliance Officer' ? 'bg-cyan-500' :
+                  userRole === 'Chief Risk Officer' ? 'bg-rose-500' :
+                  'bg-purple-500'
+                }`}></span> {userRole}
               </p>
             </div>
           </div>
 
-          <div className={`p-4 rounded-none border ${isDark ? 'bg-white/5 border-neutral-800/80' : 'bg-slate-50 border-gray-200/60'}`}>
+          <div className={`p-4 rounded-none border ${isDark ? 'bg-white/5 border-[#1F1F1F]' : 'bg-slate-50 border-[#E2E8F0]'}`}>
             <p className="text-[9px] text-slate-500 uppercase tracking-widest mb-1.5 font-bold">System Status</p>
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
@@ -249,7 +274,7 @@ const OnyxDashboard: React.FC = () => {
 
             <button 
               type="button"
-              onClick={() => setIsDark(!isDark)}
+              onClick={handleToggleDark}
               className={`p-2.5 rounded-none border transition-all ${
                 isDark 
                   ? 'bg-neutral-900 border-neutral-800/80 hover:bg-neutral-800 text-white' 
