@@ -20,9 +20,10 @@ interface ActionPoint {
 
 interface DashboardProps {
   onShowToast: (message: string) => void;
+  isDark: boolean;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onShowToast }) => {
+const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark }) => {
   const [data, setData] = useState<ActionPoint[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [statusIndex, setStatusIndex] = useState(0);
@@ -98,33 +99,41 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast }) => {
   };
 
   const getDeptStyles = (dept: string) => {
-    switch (dept) {
-      case 'IT Security': return 'bg-blue-500/10 text-blue-400 border-blue-500/30';
-      case 'Legal': return 'bg-purple-500/10 text-purple-400 border-purple-500/30';
-      case 'Operations': return 'bg-orange-500/10 text-orange-400 border-orange-500/30';
-      case 'Risk': return 'bg-rose-500/10 text-rose-400 border-rose-500/30';
-      default: return 'bg-slate-500/10 text-slate-400 border-slate-500/30';
+    if (isDark) {
+      switch (dept) {
+        case 'IT Security': return 'bg-blue-500/10 text-blue-400 border-blue-500/30';
+        case 'Legal': return 'bg-purple-500/10 text-purple-400 border-purple-500/30';
+        case 'Operations': return 'bg-orange-500/10 text-orange-400 border-orange-500/30';
+        case 'Risk': return 'bg-rose-500/10 text-rose-400 border-rose-500/30';
+        default: return 'bg-slate-500/10 text-slate-400 border-slate-500/30';
+      }
+    } else {
+      switch (dept) {
+        case 'IT Security': return 'bg-blue-50 text-blue-700 border-blue-200';
+        case 'Legal': return 'bg-purple-50 text-purple-700 border-purple-200';
+        case 'Operations': return 'bg-orange-50 text-orange-700 border-orange-200';
+        case 'Risk': return 'bg-rose-50 text-rose-700 border-rose-200';
+        default: return 'bg-slate-50 text-slate-700 border-slate-200';
+      }
     }
   };
 
   return (
-    <div className="flex-1 overflow-auto bg-slate-950 relative min-h-screen">
+    <div className="flex-1 overflow-auto bg-transparent relative">
       {/* Background Effects */}
-      <div className="absolute inset-0 bg-grid-pattern opacity-20 pointer-events-none"></div>
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/10 blur-[100px] rounded-full pointer-events-none"></div>
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/10 blur-[100px] rounded-full pointer-events-none"></div>
+      <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
 
       <div className="relative z-10 max-w-7xl mx-auto p-6 md:p-10">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
           <div>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight flex items-center gap-3">
-              <span className="p-2 bg-cyan-500/20 rounded-xl">
-                <Database className="w-8 h-8 text-cyan-400" />
+            <h1 className={`text-3xl md:text-4xl font-extrabold tracking-tight flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              <span className={`p-2 border rounded-none ${isDark ? 'bg-cyan-500/10 border-cyan-500/30' : 'bg-cyan-50 border-cyan-200'}`}>
+                <Database className={`w-8 h-8 ${isDark ? 'text-cyan-400' : 'text-cyan-600'}`} />
               </span>
               Compliance Intelligence Hub
             </h1>
-            <p className="mt-2 text-slate-400 text-lg max-w-2xl font-medium">
+            <p className={`mt-2 text-lg max-w-2xl font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               Transforming raw regulatory circulars into actionable, department-specific mandates using multi-agent AI orchestration.
             </p>
           </div>
@@ -133,19 +142,23 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast }) => {
             {data.length > 0 && (
               <button
                 onClick={exportToCSV}
-                className="flex items-center px-5 py-2.5 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 text-slate-200 rounded-xl transition-all duration-200 font-semibold group"
+                className={`flex items-center px-5 py-2.5 border rounded-none transition-all duration-200 font-semibold group ${
+                  isDark 
+                    ? 'bg-neutral-900 border-neutral-800/80 hover:bg-neutral-800 text-slate-200' 
+                    : 'bg-white border-gray-200/60 hover:bg-slate-50 text-slate-750'
+                }`}
               >
-                <Download className="w-5 h-5 mr-2 text-slate-400 group-hover:text-white transition-colors" />
+                <Download className={`w-5 h-5 mr-2 transition-colors ${isDark ? 'text-slate-400 group-hover:text-white' : 'text-slate-500 group-hover:text-slate-900'}`} />
                 Export CSV
               </button>
             )}
             <button
               onClick={fetchActionPoints}
               disabled={isLoading}
-              className={`relative group overflow-hidden flex items-center px-8 py-3 rounded-xl font-bold transition-all duration-300 ${
+              className={`relative flex items-center px-8 py-3 rounded-none font-bold transition-all duration-300 border ${
                 isLoading 
-                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' 
-                  : 'bg-cyan-500 text-slate-950 hover:bg-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)]'
+                  ? (isDark ? 'bg-neutral-900 border-neutral-800/80 text-neutral-500 cursor-not-allowed' : 'bg-slate-100 border-gray-200/60 text-slate-400 cursor-not-allowed')
+                  : (isDark ? 'bg-white border-white text-black hover:bg-neutral-200' : 'bg-slate-950 border-slate-950 text-white hover:bg-black')
               }`}
             >
               {isLoading ? (
@@ -155,12 +168,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast }) => {
                 </>
               ) : (
                 <>
-                  <Zap className="w-5 h-5 mr-3 fill-slate-950" />
+                  <Zap className={`w-5 h-5 mr-3 ${isDark ? 'fill-black text-black' : 'fill-white text-white'}`} />
                   Process Regulatory Mandate
                 </>
-              )}
-              {!isLoading && (
-                <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer pointer-events-none"></div>
               )}
             </button>
           </div>
@@ -172,50 +182,61 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast }) => {
             /* Loading State */
             <div className="flex flex-col items-center justify-center h-[500px] space-y-8">
               <div className="relative">
-                <div className="w-32 h-32 border-4 border-cyan-500/10 border-t-cyan-400 rounded-full animate-spin"></div>
+                <div className={`w-24 h-24 border-4 border-t-cyan-500 rounded-none animate-spin ${isDark ? 'border-neutral-800/80' : 'border-gray-200/60'}`}></div>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <Cpu className="w-12 h-12 text-cyan-400 animate-pulse" />
+                  <Cpu className={`w-8 h-8 ${isDark ? 'text-cyan-400' : 'text-cyan-600'} animate-pulse`} />
                 </div>
-                <div className="absolute -inset-4 bg-cyan-500/20 blur-2xl rounded-full opacity-50 animate-pulse"></div>
               </div>
 
               {/* Simulated Agent Terminal */}
-              <div className="w-full max-w-lg bg-slate-900/80 backdrop-blur-md border border-slate-700 rounded-2xl overflow-hidden shadow-2xl">
-                <div className="bg-slate-800/50 px-4 py-2 flex items-center gap-2 border-b border-slate-700">
+              <div className={`w-full max-w-lg border rounded-none overflow-hidden ${
+                isDark ? 'bg-[#111111] border-neutral-800/80' : 'bg-white border-gray-200/60'
+              }`}>
+                <div className={`px-4 py-2 flex items-center gap-2 border-b ${
+                  isDark ? 'bg-neutral-900 border-neutral-800/80' : 'bg-slate-50 border-gray-200/60'
+                }`}>
                   <div className="flex gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-rose-500/50"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500/50"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/50"></div>
+                    <div className="w-2 h-2 rounded-none bg-rose-500/50"></div>
+                    <div className="w-2 h-2 rounded-none bg-amber-500/50"></div>
+                    <div className="w-2 h-2 rounded-none bg-emerald-500/50"></div>
                   </div>
-                  <span className="text-xs font-mono text-slate-500 uppercase tracking-widest ml-2">Agent Terminal</span>
+                  <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest ml-2 font-bold">Agent Terminal</span>
                 </div>
-                <div className="p-6 font-mono text-sm space-y-3 h-32 flex flex-col justify-center">
-                  <div className="flex items-center text-cyan-400">
+                <div className="p-6 font-mono text-xs space-y-3 h-32 flex flex-col justify-center">
+                  <div className="flex items-center text-cyan-500 dark:text-cyan-400">
                     <span className="mr-3 opacity-50">#</span>
                     <span className="animate-pulse">{statusMessages[statusIndex]}</span>
                   </div>
                   <div className="flex items-center text-slate-500">
                     <span className="mr-3 opacity-50">#</span>
-                    <span className="text-xs italic">Awaiting multi-agent confirmation...</span>
+                    <span className="italic">Awaiting multi-agent confirmation...</span>
                   </div>
                 </div>
               </div>
             </div>
           ) : data.length === 0 ? (
             /* Empty State */
-            <div className="flex flex-col items-center justify-center h-[500px] border-2 border-dashed border-slate-800 rounded-3xl bg-slate-900/20 backdrop-blur-sm group hover:border-slate-700 transition-colors">
-              <div className="p-6 bg-slate-800/50 rounded-2xl mb-6 group-hover:scale-110 transition-transform duration-300 shadow-xl border border-slate-700">
-                <FileText className="w-16 h-16 text-slate-500 group-hover:text-cyan-400 transition-colors" />
+            <div className={`flex flex-col items-center justify-center h-[500px] border rounded-none ${
+              isDark ? 'bg-[#111111] border-neutral-800/80' : 'bg-white border-gray-200/60'
+            }`}>
+              <div className={`p-6 border rounded-none mb-6 ${
+                isDark ? 'bg-neutral-900 border-neutral-800/80' : 'bg-slate-50 border-gray-200/60'
+              }`}>
+                <FileText className={`w-12 h-12 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
               </div>
-              <h3 className="text-xl font-bold text-slate-200 mb-2">Ready for Analysis</h3>
-              <p className="text-slate-500 text-center max-w-md px-6">
-                Upload or select a regulatory circular to generate <span className="text-cyan-400 font-semibold">Measurable Action Points (MAPs)</span> with automated department routing.
+              <h3 className={`text-lg font-bold mb-2 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Ready for Analysis</h3>
+              <p className={`text-center max-w-md px-6 text-sm ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+                Upload or select a regulatory circular to generate <span className={isDark ? 'text-cyan-400 font-semibold' : 'text-cyan-600 font-semibold'}>Measurable Action Points (MAPs)</span> with automated department routing.
               </p>
-              <div className="mt-8 flex gap-4 opacity-50 grayscale group-hover:grayscale-0 group-hover:opacity-100 transition-all">
-                <div className="flex items-center gap-2 text-xs font-medium text-slate-400 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+              <div className="mt-8 flex gap-4">
+                <div className={`flex items-center gap-2 text-xs font-mono font-medium px-3 py-1.5 rounded-none border ${
+                  isDark ? 'text-slate-400 bg-neutral-900 border-neutral-800/80' : 'text-slate-600 bg-slate-50 border-gray-200/60'
+                }`}>
                   <Globe className="w-3.5 h-3.5" /> RBI Mandates
                 </div>
-                <div className="flex items-center gap-2 text-xs font-medium text-slate-400 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+                <div className={`flex items-center gap-2 text-xs font-mono font-medium px-3 py-1.5 rounded-none border ${
+                  isDark ? 'text-slate-400 bg-neutral-900 border-neutral-800/80' : 'text-slate-600 bg-slate-50 border-gray-200/60'
+                }`}>
                   <ShieldCheck className="w-3.5 h-3.5" /> SEBI Circulars
                 </div>
               </div>
@@ -226,45 +247,57 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast }) => {
               {data.map((item, idx) => (
                 <div 
                   key={item.map_id || idx} 
-                  className="group bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl p-6 flex flex-col hover:bg-white/[0.06] hover:border-cyan-500/30 transition-all duration-300 shadow-xl"
+                  className={`border rounded-none p-6 flex flex-col transition-all duration-300 ${
+                    isDark 
+                      ? 'bg-[#111111] border-neutral-800/80 hover:bg-neutral-900/50 hover:border-neutral-700' 
+                      : 'bg-white border-gray-200/60 hover:bg-slate-50/50 hover:border-slate-300'
+                  }`}
                 >
                   <div className="flex justify-between items-start mb-4">
-                    <span className="text-[10px] font-bold tracking-widest text-cyan-400 bg-cyan-400/10 px-2.5 py-1 rounded-full uppercase border border-cyan-400/20">
+                    <span className={`text-[10px] font-bold tracking-widest px-2.5 py-1 rounded-none uppercase border ${
+                      isDark 
+                        ? 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20' 
+                        : 'text-cyan-600 bg-cyan-50 border-cyan-200'
+                    }`}>
                       {item.map_id}
                     </span>
-                    <div className={`px-3 py-1 rounded-full text-xs font-bold border ${getDeptStyles(item.assigned_department)}`}>
+                    <div className={`px-3 py-1 rounded-none text-xs font-bold border ${getDeptStyles(item.assigned_department)}`}>
                       {item.assigned_department}
                     </div>
                   </div>
 
-                  <p className="text-slate-200 font-medium leading-relaxed mb-6 flex-1 text-lg">
+                  <p className={`font-semibold leading-relaxed mb-6 flex-1 text-[15px] ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
                     {item.task_description}
                   </p>
 
                   <div className="space-y-3 mt-auto">
                     <div className="flex justify-between items-end">
-                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Confidence Score</span>
-                      <span className={`text-sm font-bold ${getConfidenceColor(item.confidence_score).replace('bg-', 'text-')}`}>
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-mono">Confidence Score</span>
+                      <span className={`text-xs font-bold ${getConfidenceColor(item.confidence_score).replace('bg-', 'text-')}`}>
                         {item.confidence_score}%
                       </span>
                     </div>
-                    <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden p-[1px]">
+                    <div className={`h-1.5 w-full rounded-none overflow-hidden p-[1px] ${isDark ? 'bg-neutral-800' : 'bg-slate-100'}`}>
                       <div 
-                        className={`h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_8px_rgba(0,0,0,0.5)] ${getConfidenceColor(item.confidence_score)}`}
+                        className={`h-full rounded-none transition-all duration-1000 ease-out ${getConfidenceColor(item.confidence_score)}`}
                         style={{ width: `${item.confidence_score}%` }}
                       ></div>
                     </div>
                   </div>
 
-                  <div className="mt-6 pt-5 border-t border-white/5 flex justify-between items-center">
-                    <button className="text-xs font-bold text-slate-500 hover:text-cyan-400 transition-colors flex items-center gap-1 group/btn">
+                  <div className={`mt-6 pt-5 border-t flex justify-between items-center ${isDark ? 'border-neutral-800/80' : 'border-gray-200/60'}`}>
+                    <button className={`text-xs font-bold transition-colors flex items-center gap-1 group/btn ${
+                      isDark ? 'text-slate-500 hover:text-cyan-400' : 'text-slate-500 hover:text-cyan-600'
+                    }`}>
                       View Details
                       <ChevronRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
                     </button>
-                    <div className="flex -space-x-2">
+                    <div className="flex -space-x-1.5">
                       {[1, 2].map((i) => (
-                        <div key={i} className="w-6 h-6 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center overflow-hidden">
-                          <div className="w-full h-full bg-gradient-to-br from-slate-600 to-slate-800"></div>
+                        <div key={i} className={`w-5 h-5 rounded-none border flex items-center justify-center overflow-hidden ${
+                          isDark ? 'bg-neutral-800 border-neutral-900' : 'bg-slate-200 border-white'
+                        }`}>
+                          <div className={`w-full h-full ${isDark ? 'bg-slate-700' : 'bg-slate-400'}`}></div>
                         </div>
                       ))}
                     </div>
