@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   FileText,
   Zap,
@@ -58,6 +58,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole: pr
   const [manifestLoading, setManifestLoading] = useState(false);
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const [customFiles, setCustomFiles] = useState<Record<string, { title: string; category: string; filename: string }>>({});
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const terminalEndRef = useRef<HTMLDivElement | null>(null);
 
   // --- Chief Risk Officer States ---
   const [selectedRiskCell, setSelectedRiskCell] = useState<{ p: number; i: number } | null>(null);
@@ -107,6 +109,52 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole: pr
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Cleanup EventSource on unmount
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+    };
+  }, []);
+
+  // Auto-scroll to the bottom of terminal when logMessages or isLoading changes
+  useEffect(() => {
+    if (terminalEndRef.current) {
+      terminalEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [logMessages, isLoading]);
+
+  // Clean and format agent lines with custom highlights
+  const renderLogMessage = (msg: string) => {
+    const cleanMsg = msg
+      .replace(/\r/g, '')
+      .replace(/[\u001b\u009b][[()#;?]*(?:[a-zA-Z\d]*(?:;[-a-zA-Z\d;#]*){0,2})?[a-zA-Z\d]/g, '');
+
+    const regex = /(ANALYST_AGENT:|Senior Regulatory Analyst:|Senior Regulatory Analyst|ORCHESTRATOR_AGENT:|Compliance Orchestrator:|Compliance Orchestrator|SYSTEM:|SYSTEM|\[SYSTEM\]:)/gi;
+
+    const parts = cleanMsg.split(regex);
+    if (parts.length === 1) {
+      return <span>{cleanMsg}</span>;
+    }
+
+    return (
+      <span>
+        {parts.map((part, i) => {
+          const lower = part.toLowerCase();
+          if (lower.includes('analyst_agent') || lower.includes('senior regulatory analyst')) {
+            return <span key={i} className="text-cyan-400 font-bold">{part}</span>;
+          } else if (lower.includes('orchestrator_agent') || lower.includes('compliance orchestrator')) {
+            return <span key={i} className="text-rose-400 font-bold">{part}</span>;
+          } else if (lower.includes('system') || lower.includes('[system]')) {
+            return <span key={i} className="text-amber-400 font-bold">{part}</span>;
+          }
+          return <span key={i}>{part}</span>;
+        })}
+      </span>
+    );
+  };
 
   // Fluctuate hardware stats in Admin Portal
   useEffect(() => {
@@ -191,39 +239,31 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole: pr
       return;
     }
 
-    setIsLoading(true);
-    setError(null);
-    setData([]);
-    setLogMessages([]);
-
     const activeFile = (manifestData && manifestData[selectedFileId]) || customFiles[selectedFileId];
     const filename = activeFile ? activeFile.filename : 'unknown_document.pdf';
     const trackingId = selectedFileId;
 
-    const mockLogs = [
-      '[00:01] -> SYSTEM: Spinning up localized compliance node...',
-      `[00:03] -> ANALYST_AGENT: Parsing raw text from circular Ref: ${trackingId} (${filename})...`,
-      '[00:07] -> ANALYST_AGENT: Extracted key regulatory changes and structural criteria...',
-      '[00:11] -> ORCHESTRATOR_AGENT: Compiling compliance matrix maps and routing tasks...'
-    ];
+    setIsLoading(true);
+    setError(null);
+    setData([]);
+    setLogMessages([`[SYSTEM]: Establishing multi-agent connection pipeline for ${filename} (ID: ${trackingId})...`]);
 
-    let logIdx = 0;
-    const logInterval = setInterval(() => {
-      if (logIdx < mockLogs.length) {
-        setLogMessages(prev => [...prev, mockLogs[logIdx]]);
-        logIdx++;
-      } else {
-        clearInterval(logInterval);
+    // Connect to EventSource first to stream backend stdout logs
+    const eventSource = new EventSource(`${baseUrl}/api/stream-logs`);
+    eventSourceRef.current = eventSource;
+
+    eventSource.onmessage = (event) => {
+      if (event.data) {
+        setLogMessages(prev => [...prev, event.data]);
       }
-    }, 1000);
+    };
+
+    eventSource.onerror = (err) => {
+      console.error("EventSource connection error:", err);
+    };
 
     try {
-      const responsePromise = fetch(`${baseUrl}/api/generate-maps?document_id=${selectedFileId}`);
-
-      const [response] = await Promise.all([
-        responsePromise,
-        new Promise(resolve => setTimeout(resolve, 4500))
-      ]);
+      const response = await fetch(`${baseUrl}/api/generate-maps?document_id=${selectedFileId}`);
 
       if (!response.ok) throw new Error('Network response was not ok');
       const result = await response.json();
@@ -236,11 +276,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole: pr
       }
     } catch (err) {
       console.error(err);
-      await new Promise(resolve => setTimeout(resolve, 800));
       setError('Backend Connection Timeout: Please verify your local Onyx Python server cluster is actively listening on port 8000.');
       onShowToast('Connection Failed: Verify local backend status.');
     } finally {
-      clearInterval(logInterval);
+      eventSource.close();
+      if (eventSourceRef.current === eventSource) {
+        eventSourceRef.current = null;
+      }
       setIsLoading(false);
     }
   };
@@ -613,13 +655,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole: pr
                         {logMessages.map((msg, index) => (
                           <div key={index} className="flex items-start gap-1">
                             <span className="text-cyan-500/70 select-none">&gt;&gt;</span>
-                            <span>{msg}</span>
+                            <span>{renderLogMessage(msg)}</span>
                           </div>
                         ))}
                         <div className="flex items-center gap-1 text-cyan-400 animate-pulse">
                           <span className="text-cyan-500/70 select-none">&gt;&gt;</span>
                           <span>Executing live extraction pipeline...</span>
                         </div>
+                        <div ref={terminalEndRef} />
                       </div>
                     </div>
                   </div>

@@ -1,13 +1,45 @@
 import os
 import json
+import sys
+import queue
+import threading
 from typing import List
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from crewai import Agent, Task, Crew, Process, LLM
+
+# Setup active SSE subscribers
+log_subscribers = []
+subscribers_lock = threading.Lock()
+
+class LogStreamInterceptor:
+    def __init__(self, original_stdout):
+        self.original_stdout = original_stdout
+
+    def write(self, message):
+        self.original_stdout.write(message)
+        self.original_stdout.flush()
+        if message.strip():
+            # Broadcast to all active SSE subscribers
+            with subscribers_lock:
+                for q in log_subscribers:
+                    try:
+                        q.put_nowait(message.strip())
+                    except Exception:
+                        pass
+
+    def flush(self):
+        self.original_stdout.flush()
+
+    def isatty(self):
+        return self.original_stdout.isatty()
+
+# Install standard output interceptor
+sys.stdout = LogStreamInterceptor(sys.stdout)
 
 # Load keys from the .env right next to this file
 load_dotenv()
@@ -98,6 +130,32 @@ def generate_maps(document_id: str = None):
     crew = Crew(agents=[analyst, orchestrator], tasks=[t1, t2], verbose=True)
     result = crew.kickoff()
     return result.pydantic.model_dump()
+
+@app.get("/api/stream-logs")
+def stream_logs():
+    import asyncio
+    
+    q = queue.Queue()
+    with subscribers_lock:
+        log_subscribers.append(q)
+        
+    async def event_generator():
+        try:
+            while True:
+                # Poll the queue to send messages to client
+                while not q.empty():
+                    log_line = q.get_nowait()
+                    # SSE event format: "data: message\n\n"
+                    yield f"data: {log_line}\n\n"
+                await asyncio.sleep(0.05)
+        except asyncio.CancelledError:
+            pass
+        finally:
+            with subscribers_lock:
+                if q in log_subscribers:
+                    log_subscribers.remove(q)
+                    
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @app.get("/api/assets/manifest")
 def get_assets_manifest():
