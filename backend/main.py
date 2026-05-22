@@ -1,8 +1,11 @@
 import os
+import json
 from typing import List
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from crewai import Agent, Task, Crew, Process, LLM
 
@@ -10,6 +13,14 @@ from crewai import Agent, Task, Crew, Process, LLM
 load_dotenv()
 
 app = FastAPI(title="Onyx Backend")
+
+# Initialize assets directory and mount StaticFiles
+script_dir = os.path.dirname(os.path.abspath(__file__))
+assets_dir = os.path.join(script_dir, "assets")
+if not os.path.exists(assets_dir):
+    os.makedirs(assets_dir)
+
+app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
 # Mandatory for Antigravity frontend connection
 app.add_middleware(
@@ -72,3 +83,31 @@ def generate_maps():
     crew = Crew(agents=[analyst, orchestrator], tasks=[t1, t2], verbose=True)
     result = crew.kickoff()
     return result.pydantic.model_dump()
+
+@app.get("/api/assets/manifest")
+def get_assets_manifest():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    manifest_path = os.path.join(script_dir, "assets", "assets_manifest.json")
+    if os.path.exists(manifest_path):
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            return data
+        except Exception as e:
+            return JSONResponse(status_code=500, content={"error": f"Failed to read manifest: {str(e)}"})
+    return JSONResponse(status_code=404, content={"error": "Manifest file not found. Please seed the environment."})
+
+@app.post("/api/assets/seed")
+def seed_assets():
+    try:
+        import sys
+        sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+        import generate_assets
+        import importlib
+        importlib.reload(generate_assets)
+        generate_assets.main()
+        return {"status": "success", "message": "Demo PDF assets environment seeded successfully."}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"error": f"Failed to seed assets: {str(e)}"})

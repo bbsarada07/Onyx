@@ -1,0 +1,32 @@
+{
+  "GDCM-2026-ALPHA-042": {
+    "title": "Global Data Compliance Mandate (GDCM v4.2)",
+    "category": "regulatory_mandates",
+    "filename": "mandate_alpha_2026.pdf",
+    "relative_path": "assets/regulatory_mandates/mandate_alpha_2026.pdf"
+  },
+  "FTFD-2026-BETA-889": {
+    "title": "Financial Transparency Framework Directive (FTFD-2026)",
+    "category": "regulatory_mandates",
+    "filename": "mandate_beta_2026.pdf",
+    "relative_path": "assets/regulatory_mandates/mandate_beta_2026.pdf"
+  },
+  "TENDER-LOG-SUPPLY-091": {
+    "title": "Government Logistics & Supply Chain Procurement Tender",
+    "category": "procurement_tenders",
+    "filename": "tender_supply_091.pdf",
+    "relative_path": "assets/procurement_tenders/tender_supply_091.pdf"
+  },
+  "TENDER-INFRA-092": {
+    "title": "Autonomous Systems Infrastructure Architecture Proposal",
+    "category": "procurement_tenders",
+    "filename": "tender_infra_092.pdf",
+    "relative_path": "assets/procurement_tenders/tender_infra_092.pdf"
+  },
+  "AUDIT-TRAIL-SECURE-990": {
+    "title": "System Integration Audit Log & Verification Trail",
+    "category": "audit_logs",
+    "filename": "signed_audit_trail.pdf",
+    "relative_path": "assets/audit_logs/signed_audit_trail.pdf"
+  }
+}

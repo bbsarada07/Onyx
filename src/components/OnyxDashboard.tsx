@@ -12,7 +12,8 @@ import {
   Moon,
   Command, 
   BrainCircuit, 
-  Eye
+  Eye,
+  LogOut
 } from 'lucide-react';
 import Dashboard from './Dashboard';
 import MemoryManager from './MemoryManager';
@@ -24,35 +25,56 @@ import InsightsPanel from './InsightsPanel';
 
 // --- Components ---
 
-const SidebarIcon = ({ icon: Icon, active = false, label, onClick, isDark = true }: { icon: any, active?: boolean, label: string, onClick?: () => void, isDark?: boolean }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`w-full flex items-center gap-4 px-8 py-3.5 relative transition-all duration-300 ease-in-out group rounded-none cursor-pointer ${
-      active 
-        ? (isDark ? 'bg-white/5 text-white font-semibold' : 'bg-black/5 text-slate-950 font-semibold')
-        : (isDark ? 'bg-transparent text-white/40 hover:text-white/80' : 'bg-transparent text-slate-950/40 hover:text-slate-950/80')
-    }`}
-  >
-    {active && (
-      <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-cyan-500 dark:bg-cyan-400" />
-    )}
-    <Icon className={`w-4 h-4 transition-colors duration-300 ${
-      active 
-        ? (isDark ? 'text-white' : 'text-slate-950') 
-        : (isDark ? 'text-white/40 group-hover:text-white/80' : 'text-slate-950/40 group-hover:text-slate-950/80')
-    }`} />
-    <span className="text-[13px] tracking-tight">{label}</span>
-  </button>
-);
+const SidebarIcon = ({ 
+  icon: Icon, 
+  active = false, 
+  label, 
+  onClick, 
+  isDark = true, 
+  role = 'Compliance Officer' 
+}: { 
+  icon: any, 
+  active?: boolean, 
+  label: string, 
+  onClick?: () => void, 
+  isDark?: boolean, 
+  role?: string 
+}) => {
+  const accentBar = role === 'Compliance Officer' ? 'bg-cyan-500 dark:bg-cyan-400' :
+                    role === 'Chief Risk Officer' ? 'bg-rose-500 dark:bg-rose-400' :
+                    'bg-purple-500 dark:bg-purple-400';
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full flex items-center gap-4 px-8 py-3.5 relative transition-all duration-300 ease-in-out group rounded-none cursor-pointer ${
+        active 
+          ? (isDark ? 'bg-white/5 text-white font-semibold' : 'bg-black/5 text-slate-950 font-semibold')
+          : (isDark ? 'bg-transparent text-white/40 hover:text-white/80' : 'bg-transparent text-slate-950/40 hover:text-slate-950/80')
+      }`}
+    >
+      {active && (
+        <div className={`absolute left-0 top-0 bottom-0 w-[2px] ${accentBar}`} />
+      )}
+      <Icon className={`w-4 h-4 transition-colors duration-300 ${
+        active 
+          ? (isDark ? 'text-white' : 'text-slate-950') 
+          : (isDark ? 'text-white/40 group-hover:text-white/80' : 'text-slate-950/40 group-hover:text-slate-950/80')
+      }`} style={active ? { color: role === 'Compliance Officer' ? '#22d3ee' : role === 'Chief Risk Officer' ? '#f43f5e' : '#c084fc' } : {}} />
+      <span className="text-[13px] tracking-tight">{label}</span>
+    </button>
+  );
+};
 
 interface OnyxDashboardProps {
   isDarkProp?: boolean;
   setIsDarkProp?: (isDark: boolean) => void;
   userRole?: string;
+  onLogout?: () => void;
 }
 
-const OnyxDashboard: React.FC<OnyxDashboardProps> = ({ isDarkProp, setIsDarkProp, userRole = 'Compliance Officer' }) => {
+const OnyxDashboard: React.FC<OnyxDashboardProps> = ({ isDarkProp, setIsDarkProp, userRole = 'Compliance Officer', onLogout }) => {
   const [activeTab, setActiveTab] = useState('Home');
   const [isDark, setIsDark] = useState(isDarkProp !== undefined ? isDarkProp : true);
   const [searchFocused, setSearchFocused] = useState(false);
@@ -62,6 +84,10 @@ const OnyxDashboard: React.FC<OnyxDashboardProps> = ({ isDarkProp, setIsDarkProp
     setToast({ message, visible: true });
     setTimeout(() => setToast({ message: '', visible: false }), 4000);
   };
+
+  useEffect(() => {
+    console.log(`[RBAC Handshake] Authenticated Role: ${userRole} - Injecting Module Array`);
+  }, [userRole]);
 
   useEffect(() => {
     if (isDarkProp !== undefined) {
@@ -98,7 +124,7 @@ const OnyxDashboard: React.FC<OnyxDashboardProps> = ({ isDarkProp, setIsDarkProp
       case 'Home':
         return (
           <div className="w-full max-w-[1500px]">
-            <Dashboard onShowToast={showToast} isDark={isDark} />
+            <Dashboard onShowToast={showToast} isDark={isDark} userRole={userRole} />
           </div>
         );
       case 'Memory':
@@ -214,6 +240,7 @@ const OnyxDashboard: React.FC<OnyxDashboardProps> = ({ isDarkProp, setIsDarkProp
               active={activeTab === item.label} 
               onClick={() => setActiveTab(item.label)}
               isDark={isDark}
+              role={userRole}
             />
           ))}
         </nav>
@@ -231,6 +258,17 @@ const OnyxDashboard: React.FC<OnyxDashboardProps> = ({ isDarkProp, setIsDarkProp
                 }`}></span> {userRole}
               </p>
             </div>
+            {onLogout && (
+              <button 
+                onClick={onLogout} 
+                className={`p-1.5 border hover:scale-105 transition-all rounded-none cursor-pointer flex items-center justify-center ${
+                  isDark ? 'border-neutral-800 hover:bg-white/5 text-slate-400 hover:text-white' : 'border-gray-200 hover:bg-black/5 text-slate-500 hover:text-slate-900'
+                }`}
+                title="Log Out"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           <div className={`p-4 rounded-none border ${isDark ? 'bg-white/5 border-[#1F1F1F]' : 'bg-slate-50 border-[#E2E8F0]'}`}>
