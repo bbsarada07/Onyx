@@ -47,7 +47,22 @@ class MAPCollection(BaseModel):
     action_points: List[MAP]
 
 @app.get("/api/generate-maps")
-def generate_maps():
+def generate_maps(document_id: str = None):
+    doc_ref = document_id or "RBI/2026/77"
+    doc_title = "Regulatory Mandate"
+    
+    # Try to load manifest to get more details if available
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    manifest_path = os.path.join(script_dir, "assets", "assets_manifest.json")
+    if document_id and os.path.exists(manifest_path):
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                manifest = json.load(f)
+            if document_id in manifest:
+                doc_title = manifest[document_id].get("title", doc_title)
+        except Exception:
+            pass
+
     # 1. Agents
     analyst = Agent(
         role="Senior Regulatory Analyst",
@@ -67,7 +82,7 @@ def generate_maps():
 
     # 2. Tasks
     t1 = Task(
-        description="Analyze the RBI circular Ref: RBI/2026/77 and list 3 key tasks.",
+        description=f"Analyze the regulatory circular Ref: {doc_ref} ({doc_title}) and list 3 key compliance action items.",
         expected_output="A list of 3 mandates.",
         agent=analyst
     )

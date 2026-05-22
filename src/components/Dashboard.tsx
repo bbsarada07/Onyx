@@ -56,6 +56,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole: pr
   const [count, setCount] = useState(0);
   const [manifestData, setManifestData] = useState<any>(null);
   const [manifestLoading, setManifestLoading] = useState(false);
+  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
+  const [customFiles, setCustomFiles] = useState<Record<string, { title: string; category: string; filename: string }>>({});
 
   // --- Chief Risk Officer States ---
   const [selectedRiskCell, setSelectedRiskCell] = useState<{ p: number; i: number } | null>(null);
@@ -130,6 +132,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole: pr
       if (response.ok) {
         const result = await response.json();
         setManifestData(result);
+        const mandates = Object.keys(result).filter(id => result[id].category === 'regulatory_mandates');
+        if (mandates.length > 0) {
+          setSelectedFileId(prev => prev || mandates[0]);
+        }
       }
     } catch (err) {
       console.error('Failed to load asset manifest', err);
@@ -143,6 +149,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole: pr
       fetchManifest();
     }
   }, [userRole]);
+
+  useEffect(() => {
+    if (manifestData && !selectedFileId) {
+      const mandates = Object.keys(manifestData).filter(
+        id => manifestData[id].category === 'regulatory_mandates'
+      );
+      if (mandates.length > 0) {
+        setSelectedFileId(mandates[0]);
+      }
+    }
+  }, [manifestData, selectedFileId]);
 
   // Compliance counter animation
   useEffect(() => {
@@ -169,14 +186,23 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole: pr
 
   // API Call: Process Regulatory Mandate
   const fetchActionPoints = async () => {
+    if (!selectedFileId) {
+      onShowToast("[Ingestion Blocked]: Please mount an institutional mandate asset into the queue first.");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setData([]);
     setLogMessages([]);
 
+    const activeFile = (manifestData && manifestData[selectedFileId]) || customFiles[selectedFileId];
+    const filename = activeFile ? activeFile.filename : 'unknown_document.pdf';
+    const trackingId = selectedFileId;
+
     const mockLogs = [
       '[00:01] -> SYSTEM: Spinning up localized compliance node...',
-      '[00:03] -> ANALYST_AGENT: Parsing raw text from circular Ref: RBI/2026/77...',
+      `[00:03] -> ANALYST_AGENT: Parsing raw text from circular Ref: ${trackingId} (${filename})...`,
       '[00:07] -> ANALYST_AGENT: Extracted key regulatory changes and structural criteria...',
       '[00:11] -> ORCHESTRATOR_AGENT: Compiling compliance matrix maps and routing tasks...'
     ];
@@ -192,7 +218,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole: pr
     }, 1000);
 
     try {
-      const responsePromise = fetch(`${baseUrl}/api/generate-maps`);
+      const responsePromise = fetch(`${baseUrl}/api/generate-maps?document_id=${selectedFileId}`);
 
       const [response] = await Promise.all([
         responsePromise,
@@ -217,6 +243,20 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole: pr
       clearInterval(logInterval);
       setIsLoading(false);
     }
+  };
+
+  const handleLocalFileUpload = (file: File) => {
+    const newId = `MANDATE-CUSTOM-${Math.floor(100 + Math.random() * 900)}`;
+    setCustomFiles(prev => ({
+      ...prev,
+      [newId]: {
+        title: `Custom Uploaded Mandate: ${file.name}`,
+        category: 'regulatory_mandates',
+        filename: file.name
+      }
+    }));
+    setSelectedFileId(newId);
+    onShowToast(`Simulated Upload Success: ${file.name} mounted as ${newId}.`);
   };
 
   // API Call: Seed assets (System Admin)
@@ -372,6 +412,25 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole: pr
     </div>
   );
 
+  // Combine regulatory mandates from manifest and custom files
+  const mandatesList: { id: string; filename: string; title?: string; category?: string }[] = [];
+  if (manifestData) {
+    Object.keys(manifestData)
+      .filter(id => manifestData[id].category === 'regulatory_mandates')
+      .forEach(id => {
+        mandatesList.push({
+          id,
+          ...manifestData[id]
+        });
+      });
+  }
+  Object.keys(customFiles).forEach(id => {
+    mandatesList.push({
+      id,
+      ...customFiles[id]
+    });
+  });
+
   return (
     <div className="flex-1 bg-transparent relative transition-all duration-300 ease-in-out">
       <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none z-0"></div>
@@ -404,26 +463,130 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole: pr
 
                 {/* Upload Workspace Box */}
                 {!isLoading && data.length === 0 && (
-                  <div className={`flex flex-col items-center justify-center p-10 border border-dashed rounded-none transition-all duration-300 ${isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
-                    }`}>
-                    <div className={`p-4 border rounded-none mb-4 ${isDark ? 'bg-white/5 border-[#1F1F1F]' : 'bg-slate-50 border-[#E2E8F0]'
+                  <div className="flex flex-col gap-6 animate-in fade-in duration-300">
+                    {/* Interactive Staging Layout */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      
+                      {/* Left: Sleek File Selection Matrix Table */}
+                      <div className={`p-5 border rounded-none flex flex-col min-h-[220px] ${
+                        isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
                       }`}>
-                      <FileText className={`w-8 h-8 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} />
+                        <div className="flex items-center gap-2 mb-4 border-b border-neutral-850 dark:border-neutral-800 pb-2">
+                          <FileText className="w-4 h-4 text-cyan-400" />
+                          <h4 className={`text-xs font-bold uppercase tracking-widest ${isDark ? 'text-white' : 'text-slate-950'}`}>
+                            Select Mandate Queue Target
+                          </h4>
+                        </div>
+                        
+                        <div className="space-y-2 flex-1 overflow-y-auto max-h-[170px] pr-1 custom-scrollbar">
+                          {manifestLoading ? (
+                            <div className="flex flex-col items-center justify-center py-6 gap-2">
+                              <RefreshCw className="w-5 h-5 text-slate-500 animate-spin" />
+                              <span className="text-[10px] font-mono text-slate-500">Querying Mandate Registry...</span>
+                            </div>
+                          ) : mandatesList.length > 0 ? (
+                            mandatesList.map((file) => {
+                              const isSelected = selectedFileId === file.id;
+                              return (
+                                <div
+                                  key={file.id}
+                                  onClick={() => setSelectedFileId(file.id)}
+                                  className={`p-3 border rounded-none flex items-center justify-between cursor-pointer transition-all duration-300 ${
+                                    isSelected 
+                                      ? 'border-cyan-500/40 bg-cyan-500/5 shadow-[0_0_10px_rgba(6,182,212,0.05)]' 
+                                      : isDark ? 'border-neutral-800 bg-black/40 hover:border-neutral-700' : 'border-gray-200 bg-slate-50 hover:border-slate-300'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <FileText className={`w-4 h-4 flex-shrink-0 ${isSelected ? 'text-cyan-400' : 'text-slate-500'}`} />
+                                    <div className="min-w-0">
+                                      <p className={`text-xs font-bold truncate ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                                        {file.filename}
+                                      </p>
+                                      <p className="text-[9px] text-slate-500 font-mono mt-0.5">ID: {file.id}</p>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Radio check indicator */}
+                                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 ${
+                                    isSelected ? 'border-cyan-500 bg-cyan-500/10' : 'border-slate-600'
+                                  }`}>
+                                    {isSelected && <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />}
+                                  </div>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="text-center py-6 text-xs text-slate-500 font-mono">
+                              No active mandates found. Compile mock files in Admin Portal.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Right: Visual Dropzone Simulation Component */}
+                      <div 
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                            handleLocalFileUpload(e.dataTransfer.files[0]);
+                          }
+                        }}
+                        onClick={() => document.getElementById('hidden-file-input')?.click()}
+                        className={`border-2 border-dashed rounded-none p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 group min-h-[220px] ${
+                          isDark 
+                            ? 'bg-[#111111]/50 border-neutral-800 hover:border-cyan-500/40 hover:bg-[#151515]' 
+                            : 'bg-white border-slate-300 hover:border-cyan-500/40 hover:bg-slate-50'
+                        }`}
+                      >
+                        <input 
+                          id="hidden-file-input"
+                          type="file"
+                          accept=".pdf,.json"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files.length > 0) {
+                              handleLocalFileUpload(e.target.files[0]);
+                            }
+                          }}
+                        />
+                        
+                        <div className={`p-3 border rounded-none mb-3 transition-colors ${
+                          isDark ? 'bg-white/5 border-neutral-800 group-hover:border-cyan-500/30' : 'bg-slate-50 border-slate-200 group-hover:border-cyan-500/30'
+                        }`}>
+                          <FileText className={`w-8 h-8 ${isDark ? 'text-slate-400 group-hover:text-cyan-400' : 'text-slate-500 group-hover:text-cyan-400'} transition-colors`} />
+                        </div>
+                        
+                        <p className={`text-xs font-bold mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                          Drag & Drop Custom Regulatory Circular
+                        </p>
+                        <p className="text-[10px] text-slate-500 max-w-[240px]">
+                          or click to browse local node files (.pdf, .json)
+                        </p>
+                      </div>
+                      
                     </div>
-                    <h3 className={`text-sm font-bold mb-1.5 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-                      Regulatory Ingestion Queue
-                    </h3>
-                    <p className="text-center max-w-sm text-[11px] leading-relaxed text-slate-500">
-                      No active regulatory circular has been parsed. Kick off the parsing engine to extract structured Action Points (MAPs) from raw mandates.
-                    </p>
-
-                    <button
-                      onClick={fetchActionPoints}
-                      className="mt-6 flex items-center justify-center px-6 py-2.5 rounded-none text-xs font-bold transition-all duration-300 border cursor-pointer bg-cyan-500 border-cyan-500 text-black hover:bg-cyan-400"
-                    >
-                      <Zap className="w-3.5 h-3.5 mr-2 fill-black text-black" />
-                      Process Regulatory Mandate
-                    </button>
+                    
+                    {/* Process Button Below Components */}
+                    <div className="flex justify-center">
+                      <button
+                        onClick={fetchActionPoints}
+                        className={`flex items-center justify-center px-8 py-3 rounded-none text-xs font-extrabold uppercase tracking-widest transition-all duration-300 border cursor-pointer ${
+                          selectedFileId
+                            ? 'bg-cyan-500 border-cyan-500 text-black hover:bg-cyan-400 hover:shadow-[0_0_15px_rgba(6,182,212,0.4)]'
+                            : 'bg-neutral-800 border-neutral-800 text-slate-500 cursor-not-allowed'
+                        }`}
+                      >
+                        <Zap className={`w-3.5 h-3.5 mr-2 ${selectedFileId ? 'fill-black text-black' : 'text-slate-500'}`} />
+                        Process Regulatory Mandate
+                      </button>
+                    </div>
+                    
                   </div>
                 )}
 
