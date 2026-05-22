@@ -535,8 +535,8 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
       </section>
 
       {/* RIGHT PANEL: The Input Side */}
-      <section className="w-full md:w-1/2 flex flex-col justify-center items-center p-8 md:p-16 relative">
-        <div className="w-full max-w-[420px] flex flex-col gap-8 relative">
+      <section className="w-full md:w-1/2 flex flex-col justify-center items-center p-8 md:p-16 relative h-full md:h-screen overflow-y-auto custom-scrollbar">
+        <div className="w-full max-w-[420px] flex flex-col gap-4 md:gap-6 relative">
 
           {/* Headline */}
           <div className="flex flex-col gap-2">
@@ -565,7 +565,7 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
           </AnimatePresence>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-3.5 md:space-y-5">
 
             {/* Email Field */}
             <div className="space-y-2">
@@ -650,7 +650,7 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
                       type="button"
                       disabled={isSubmitting}
                       onClick={() => setSelectedRole(role.name)}
-                      className={`w-full flex items-center justify-between p-3.5 border rounded-none text-left transition-all ${isActive
+                      className={`w-full flex items-center justify-between p-2.5 sm:p-3 border rounded-none text-left transition-all ${isActive
                         ? `${activeBorder}`
                         : (isDark ? 'border-neutral-900/60 bg-neutral-900/30 text-slate-400 hover:border-neutral-800' : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-slate-200')
                         }`}
