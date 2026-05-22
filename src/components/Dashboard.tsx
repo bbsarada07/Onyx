@@ -28,11 +28,23 @@ interface ActionPoint {
 interface DashboardProps {
   onShowToast: (message: string) => void;
   isDark: boolean;
-  userRole?: string;
+  userRole?: string; // Kept for compatibility, but overridden by localStorage state
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = 'Compliance Officer' }) => {
+const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark }) => {
   const baseUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+
+  // --- Dynamic Role State Interceptor ---
+  const [userRole, setUserRole] = useState<string>('Compliance Officer');
+
+  useEffect(() => {
+    // Read the serialized credential token from login gate selection
+    const savedRole = localStorage.getItem("onyx_user_role");
+    if (savedRole) {
+      setUserRole(savedRole);
+      console.log(`[Dashboard Module Workspace] Session active under identity: ${savedRole}`);
+    }
+  }, []);
 
   // --- Compliance Officer States ---
   const [data, setData] = useState<ActionPoint[]>([]);
@@ -217,7 +229,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
       if (response.ok) {
         const res = await response.json();
         onShowToast(res.message || 'Environment seeded successfully.');
-        // Refresh manifest list if active
         fetchManifest();
       } else {
         throw new Error('Regeneration failed');
@@ -233,14 +244,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
   // CRO Emergency Authorization Submit
   const handleEmergencyMitigation = () => {
     setIsAuthorizing(true);
-    
+
     // Generate a mock SHA-256 transaction token
     const characters = 'ABCDEF0123456789';
     let resultToken = '0x';
     for (let i = 0; i < 40; i++) {
       resultToken += characters.charAt(Math.floor(Math.random() * characters.length));
     }
-    
+
     setTimeout(() => {
       setMitigationToken(resultToken);
       setMitigationAuthorized(true);
@@ -348,7 +359,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
         <h1 className={`text-3xl font-extrabold tracking-tight ${isDark ? 'text-white' : 'text-[#0F172A]'}`}>
           {title}
         </h1>
-        <div 
+        <div
           className="text-[10px] font-mono font-bold px-2 py-0.5 border rounded-none uppercase tracking-widest"
           style={{ borderColor: `${accentColor}40`, color: accentColor, backgroundColor: `${accentColor}0a` }}
         >
@@ -390,15 +401,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Left Column: Dropzone & File List */}
               <div className="lg:col-span-2 space-y-6">
-                
+
                 {/* Upload Workspace Box */}
                 {!isLoading && data.length === 0 && (
-                  <div className={`flex flex-col items-center justify-center p-10 border border-dashed rounded-none transition-all duration-300 ${
-                    isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
-                  }`}>
-                    <div className={`p-4 border rounded-none mb-4 ${
-                      isDark ? 'bg-white/5 border-[#1F1F1F]' : 'bg-slate-50 border-[#E2E8F0]'
+                  <div className={`flex flex-col items-center justify-center p-10 border border-dashed rounded-none transition-all duration-300 ${isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
                     }`}>
+                    <div className={`p-4 border rounded-none mb-4 ${isDark ? 'bg-white/5 border-[#1F1F1F]' : 'bg-slate-50 border-[#E2E8F0]'
+                      }`}>
                       <FileText className={`w-8 h-8 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} />
                     </div>
                     <h3 className={`text-sm font-bold mb-1.5 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
@@ -456,9 +465,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
                 {/* Extracted Compliance Action Items Grid */}
                 {!isLoading && data.length > 0 && (
                   <div className="space-y-4">
-                    <div className={`p-4 border flex items-center justify-between rounded-none ${
-                      isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
-                    }`}>
+                    <div className={`p-4 border flex items-center justify-between rounded-none ${isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
+                      }`}>
                       <div>
                         <h2 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-[#0F172A]'}`}>
                           Compliance Action Grid
@@ -470,9 +478,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
                       <div className="flex gap-2">
                         <button
                           onClick={exportToCSV}
-                          className={`flex items-center px-4 py-2 border rounded-none font-bold text-[10px] cursor-pointer transition-all ${
-                            isDark ? 'bg-neutral-900 border-[#1F1F1F] text-slate-200 hover:bg-neutral-800' : 'bg-white border-[#E2E8F0] text-slate-700 hover:bg-slate-50'
-                          }`}
+                          className={`flex items-center px-4 py-2 border rounded-none font-bold text-[10px] cursor-pointer transition-all ${isDark ? 'bg-neutral-900 border-[#1F1F1F] text-slate-200 hover:bg-neutral-800' : 'bg-white border-[#E2E8F0] text-slate-700 hover:bg-slate-50'
+                            }`}
                         >
                           <Download className="w-3 h-3 mr-1.5" /> Export (CSV)
                         </button>
@@ -492,9 +499,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
                           <div
                             key={item.map_id}
                             onClick={() => setSelectedCard(item)}
-                            className={`border rounded-none p-5 flex flex-col justify-between transition-all duration-300 cursor-pointer ${
-                              isDark ? 'bg-[#111111] border-[#1F1F1F] hover:bg-[#151515] hover:border-neutral-700' : 'bg-white border-[#E2E8F0] hover:bg-slate-50/50 hover:border-slate-300'
-                            }`}
+                            className={`border rounded-none p-5 flex flex-col justify-between transition-all duration-300 cursor-pointer ${isDark ? 'bg-[#111111] border-[#1F1F1F] hover:bg-[#151515] hover:border-neutral-700' : 'bg-white border-[#E2E8F0] hover:bg-slate-50/50 hover:border-slate-300'
+                              }`}
                           >
                             <div className="flex justify-between items-center mb-3">
                               <span className="text-[9px] font-bold tracking-wider text-slate-500 font-mono">
@@ -502,9 +508,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
                               </span>
                               <button
                                 onClick={(e) => toggleAcknowledge(e, item.map_id)}
-                                className={`text-[8px] font-bold font-mono tracking-widest px-1.5 py-0.5 rounded-none border transition-all cursor-pointer ${
-                                  isAcknowledged ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
-                                }`}
+                                className={`text-[8px] font-bold font-mono tracking-widest px-1.5 py-0.5 rounded-none border transition-all cursor-pointer ${isAcknowledged ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                  }`}
                               >
                                 {isAcknowledged ? 'ACKNOWLEDGED' : 'PENDING'}
                               </button>
@@ -530,9 +535,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
 
               {/* Right Column: PDF Asset Registry File List */}
               <div className="space-y-6">
-                <div className={`p-6 border rounded-none ${
-                  isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
-                }`}>
+                <div className={`p-6 border rounded-none ${isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
+                  }`}>
                   <div className="flex items-center gap-2 mb-4 border-b border-neutral-800/80 pb-3">
                     <ShieldCheck className="w-4 h-4 text-cyan-400" />
                     <h3 className={`text-xs font-bold uppercase tracking-widest ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -552,11 +556,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
                           const file = manifestData[id];
                           const downloadUrl = `${baseUrl}/${file.relative_path}`;
                           return (
-                            <div 
+                            <div
                               key={id}
-                              className={`p-3 border rounded-none flex items-center justify-between gap-3 ${
-                                isDark ? 'bg-black/40 border-neutral-800' : 'bg-slate-50 border-gray-200'
-                              }`}
+                              className={`p-3 border rounded-none flex items-center justify-between gap-3 ${isDark ? 'bg-black/40 border-neutral-800' : 'bg-slate-50 border-gray-200'
+                                }`}
                             >
                               <div className="min-w-0">
                                 <p className={`text-xs font-bold truncate ${isDark ? 'text-slate-200' : 'text-slate-800'}`} title={file.title}>
@@ -596,14 +599,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
             {renderHeader("Enterprise Risk Control Hub", "Domain: Enterprise Risk Metrics & Executive Controls")}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              
+
               {/* Left Side: Risk Matrix & Vulnerability Status */}
               <div className="lg:col-span-2 space-y-6">
-                
+
                 {/* Vulnerability Metric Card */}
-                <div className={`p-6 border rounded-none grid grid-cols-1 md:grid-cols-3 gap-6 ${
-                  isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
-                }`}>
+                <div className={`p-6 border rounded-none grid grid-cols-1 md:grid-cols-3 gap-6 ${isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
+                  }`}>
                   <div className="space-y-1">
                     <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest font-mono">Systemic Risk Score</span>
                     <div className="flex items-baseline gap-2">
@@ -632,9 +634,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
                 </div>
 
                 {/* Risk Matrix Component */}
-                <div className={`p-6 border rounded-none ${
-                  isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
-                }`}>
+                <div className={`p-6 border rounded-none ${isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
+                  }`}>
                   <div className="flex items-center justify-between mb-4 border-b border-neutral-800/80 pb-3">
                     <div className="flex items-center gap-2">
                       <Activity className="w-4 h-4 text-rose-400" />
@@ -653,7 +654,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
                       const key = `${rowIdx}-${colIdx}`;
                       const cellData = riskThreats[key];
                       const isSelected = selectedRiskCell?.p === rowIdx && selectedRiskCell?.i === colIdx;
-                      
+
                       // Cell color based on level
                       let cellColor = '';
                       if (cellData.level === 'LOW') cellColor = 'bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/25';
@@ -666,17 +667,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
                           key={i}
                           type="button"
                           onClick={() => setSelectedRiskCell({ p: rowIdx, i: colIdx })}
-                          className={`h-16 border flex flex-col items-center justify-center transition-all cursor-pointer rounded-none relative ${cellColor} ${
-                            isSelected ? 'ring-2 ring-rose-500 scale-[1.03] z-10' : ''
-                          }`}
+                          className={`h-16 border flex flex-col items-center justify-center transition-all cursor-pointer rounded-none relative ${cellColor} ${isSelected ? 'ring-2 ring-rose-500 scale-[1.03] z-10' : ''
+                            }`}
                         >
                           <span className="text-[10px] font-mono font-bold text-slate-400">P{rowIdx} x I{colIdx}</span>
-                          <span className={`text-[8px] font-bold font-mono mt-1 ${
-                            cellData.level === 'LOW' ? 'text-emerald-500' :
-                            cellData.level === 'MED' ? 'text-amber-500' :
-                            cellData.level === 'HIGH' ? 'text-orange-500' :
-                            'text-rose-500 animate-pulse'
-                          }`}>{cellData.level}</span>
+                          <span className={`text-[8px] font-bold font-mono mt-1 ${cellData.level === 'LOW' ? 'text-emerald-500' :
+                              cellData.level === 'MED' ? 'text-amber-500' :
+                                cellData.level === 'HIGH' ? 'text-orange-500' :
+                                  'text-rose-500 animate-pulse'
+                            }`}>{cellData.level}</span>
                         </button>
                       );
                     })}
@@ -684,13 +683,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
 
                   {/* Matrix Selection Vector Details */}
                   {selectedRiskCell ? (
-                    <div className={`p-4 border border-dashed rounded-none ${
-                      isDark ? 'bg-black/40 border-neutral-800' : 'bg-slate-50 border-slate-200'
-                    }`}>
+                    <div className={`p-4 border border-dashed rounded-none ${isDark ? 'bg-black/40 border-neutral-800' : 'bg-slate-50 border-slate-200'
+                      }`}>
                       <div className="flex items-center justify-between mb-1.5">
-                        <h4 className={`text-xs font-bold uppercase tracking-wider ${
-                          riskThreats[`${selectedRiskCell.p}-${selectedRiskCell.i}`].level === 'CRITICAL' ? 'text-rose-500' : 'text-slate-300'
-                        }`}>
+                        <h4 className={`text-xs font-bold uppercase tracking-wider ${riskThreats[`${selectedRiskCell.p}-${selectedRiskCell.i}`].level === 'CRITICAL' ? 'text-rose-500' : 'text-slate-300'
+                          }`}>
                           {riskThreats[`${selectedRiskCell.p}-${selectedRiskCell.i}`].title}
                         </h4>
                         <span className="text-[9px] font-mono text-slate-500">Coord: [P{selectedRiskCell.p}, I{selectedRiskCell.i}]</span>
@@ -709,11 +706,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
 
               {/* Right Side: Action Trigger & Transaction Audit Table */}
               <div className="space-y-6">
-                
+
                 {/* Authorization Command Card */}
-                <div className={`p-6 border rounded-none text-center ${
-                  isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
-                }`}>
+                <div className={`p-6 border rounded-none text-center ${isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
+                  }`}>
                   <ShieldAlert className="w-8 h-8 text-rose-500 mx-auto mb-3" />
                   <h3 className={`text-sm font-bold mb-1.5 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     Mitigation Gateway
@@ -738,9 +734,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
                 </div>
 
                 {/* Audit Logs Trail table representation */}
-                <div className={`p-6 border rounded-none ${
-                  isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
-                }`}>
+                <div className={`p-6 border rounded-none ${isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
+                  }`}>
                   <div className="flex items-center gap-2 mb-4 border-b border-neutral-800/80 pb-3">
                     <FileText className="w-4 h-4 text-rose-400" />
                     <h3 className={`text-xs font-bold uppercase tracking-widest ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -791,14 +786,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
             {renderHeader("Node Sandbox Controller", "Domain: Node Sandbox Performance & Lifecycle Configurations")}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              
+
               {/* Left Side: Hardware and Gateway Status */}
               <div className="lg:col-span-2 space-y-6">
-                
+
                 {/* Hardware monitors */}
-                <div className={`p-6 border rounded-none ${
-                  isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
-                }`}>
+                <div className={`p-6 border rounded-none ${isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
+                  }`}>
                   <div className="flex items-center gap-2 mb-4 border-b border-neutral-800/80 pb-3">
                     <Cpu className="w-4 h-4 text-purple-400" />
                     <h3 className={`text-xs font-bold uppercase tracking-widest ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -814,9 +808,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
                         <span className="font-mono font-bold text-purple-400">{systemCpu}%</span>
                       </div>
                       <div className="w-full bg-slate-200 dark:bg-neutral-800 h-2 rounded-none overflow-hidden">
-                        <div 
-                          className="bg-purple-500 h-full transition-all duration-1000" 
-                          style={{ width: `${systemCpu}%` }} 
+                        <div
+                          className="bg-purple-500 h-full transition-all duration-1000"
+                          style={{ width: `${systemCpu}%` }}
                         />
                       </div>
                       <span className="text-[9px] text-slate-500 font-mono block">Node: 8x redundant cloud thread pools active.</span>
@@ -829,9 +823,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
                         <span className="font-mono font-bold text-purple-400">{systemMemory}% <span className="text-[10px] text-slate-500">({(32 * systemMemory / 100).toFixed(1)}GB / 32GB)</span></span>
                       </div>
                       <div className="w-full bg-slate-200 dark:bg-neutral-800 h-2 rounded-none overflow-hidden">
-                        <div 
-                          className="bg-purple-500 h-full transition-all duration-1000" 
-                          style={{ width: `${systemMemory}%` }} 
+                        <div
+                          className="bg-purple-500 h-full transition-all duration-1000"
+                          style={{ width: `${systemMemory}%` }}
                         />
                       </div>
                       <span className="text-[9px] text-slate-500 font-mono block">Vault context allocated in secure paging slots.</span>
@@ -840,9 +834,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
                 </div>
 
                 {/* Gateway Sockets statuses */}
-                <div className={`p-6 border rounded-none ${
-                  isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
-                }`}>
+                <div className={`p-6 border rounded-none ${isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
+                  }`}>
                   <div className="flex items-center gap-2 mb-4 border-b border-neutral-800/80 pb-3">
                     <Network className="w-4 h-4 text-purple-400" />
                     <h3 className={`text-xs font-bold uppercase tracking-widest ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -852,11 +845,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
 
                   <div className="space-y-3">
                     {activeSockets.map((socket, index) => (
-                      <div 
-                        key={index} 
-                        className={`p-3 border rounded-none flex items-center justify-between ${
-                          isDark ? 'bg-black/35 border-neutral-800/60' : 'bg-slate-50 border-gray-200/60'
-                        }`}
+                      <div
+                        key={index}
+                        className={`p-3 border rounded-none flex items-center justify-between ${isDark ? 'bg-black/35 border-neutral-800/60' : 'bg-slate-50 border-gray-200/60'
+                          }`}
                       >
                         <div className="flex items-center gap-3">
                           <Server className="w-3.5 h-3.5 text-purple-400" />
@@ -881,11 +873,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
 
               {/* Right Side: Seeding Action & Variable Logs */}
               <div className="space-y-6">
-                
+
                 {/* Seeding Action card */}
-                <div className={`p-6 border rounded-none text-center ${
-                  isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
-                }`}>
+                <div className={`p-6 border rounded-none text-center ${isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
+                  }`}>
                   <Sliders className="w-8 h-8 text-purple-500 mx-auto mb-3" />
                   <h3 className={`text-sm font-bold mb-1.5 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     Environment Seeding
@@ -914,9 +905,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
                 </div>
 
                 {/* Configuration log console feed */}
-                <div className={`p-6 border rounded-none ${
-                  isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
-                }`}>
+                <div className={`p-6 border rounded-none ${isDark ? 'bg-[#111111] border-[#1F1F1F]' : 'bg-white border-[#E2E8F0]'
+                  }`}>
                   <div className="flex items-center gap-2 mb-4 border-b border-neutral-800/80 pb-3">
                     <Terminal className="w-4 h-4 text-purple-400" />
                     <h3 className={`text-xs font-bold uppercase tracking-widest ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -947,9 +937,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
       {/* ========================================================================= */}
       {/* ==================== MODAL: AUDIT TRAIL SIDE DRAWER ===================== */}
       {/* ========================================================================= */}
-      <div className={`fixed inset-y-0 right-0 w-full sm:w-[420px] z-50 shadow-2xl border-l flex flex-col transition-all duration-300 ease-in-out ${
-        isDark ? 'bg-[#111111] border-[#1F1F1F] text-white' : 'bg-white border-[#E2E8F0] text-[#0F172A]'
-      } ${selectedCard ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`fixed inset-y-0 right-0 w-full sm:w-[420px] z-50 shadow-2xl border-l flex flex-col transition-all duration-300 ease-in-out ${isDark ? 'bg-[#111111] border-[#1F1F1F] text-white' : 'bg-white border-[#E2E8F0] text-[#0F172A]'
+        } ${selectedCard ? 'translate-x-0' : 'translate-x-full'}`}>
         {selectedCard && (
           <div className="flex-1 flex flex-col h-full overflow-hidden">
             <div className={`p-6 border-b flex items-center justify-between ${isDark ? 'border-[#1F1F1F]' : 'border-[#E2E8F0]'}`}>
@@ -959,9 +948,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
               </div>
               <button
                 onClick={() => setSelectedCard(null)}
-                className={`p-2 border hover:scale-105 transition-all rounded-none cursor-pointer flex items-center justify-center ${
-                  isDark ? 'border-[#1F1F1F] hover:bg-white/5 text-slate-400 hover:text-white' : 'border-[#E2E8F0] hover:bg-black/5 text-slate-500 hover:text-[#0F172A]'
-                }`}
+                className={`p-2 border hover:scale-105 transition-all rounded-none cursor-pointer flex items-center justify-center ${isDark ? 'border-[#1F1F1F] hover:bg-white/5 text-slate-400 hover:text-white' : 'border-[#E2E8F0] hover:bg-black/5 text-slate-500 hover:text-[#0F172A]'
+                  }`}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1018,9 +1006,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
 
               <div className="space-y-1.5">
                 <h4 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest font-mono">Source Document Reference Clip</h4>
-                <div className={`p-3 border border-dashed text-[10px] leading-relaxed font-mono ${
-                  isDark ? 'bg-neutral-950 border-neutral-800 text-slate-400' : 'bg-slate-50 border-slate-300 text-slate-600'
-                }`}>
+                <div className={`p-3 border border-dashed text-[10px] leading-relaxed font-mono ${isDark ? 'bg-neutral-950 border-neutral-800 text-slate-400' : 'bg-slate-50 border-slate-300 text-slate-600'
+                  }`}>
                   {getSourceDocumentClip(selectedCard)}
                 </div>
               </div>
@@ -1029,11 +1016,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
             <div className={`p-6 border-t mt-auto flex gap-4 ${isDark ? 'border-[#1F1F1F]' : 'border-[#E2E8F0]'}`}>
               <button
                 onClick={() => toggleAcknowledge(null, selectedCard.map_id)}
-                className={`w-full py-2 text-xs font-bold border rounded-none transition-all cursor-pointer ${
-                  acknowledgedCards[selectedCard.map_id]
+                className={`w-full py-2 text-xs font-bold border rounded-none transition-all cursor-pointer ${acknowledgedCards[selectedCard.map_id]
                     ? (isDark ? 'bg-[#1F1F1F] border-[#1F1F1F] text-slate-400 hover:text-white' : 'bg-slate-100 border-[#E2E8F0] text-slate-700 hover:text-slate-900')
                     : (isDark ? 'bg-white border-white text-black hover:bg-neutral-200' : 'bg-slate-950 border-slate-950 text-white hover:bg-black')
-                }`}
+                  }`}
               >
                 {acknowledgedCards[selectedCard.map_id] ? 'Revert to Pending' : 'Acknowledge Mandate'}
               </button>
@@ -1047,10 +1033,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
       {/* ========================================================================= */}
       {riskMitigationModalOpen && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-          <div 
-            className={`w-full max-w-md border p-6 space-y-6 rounded-none shadow-2xl relative animate-in zoom-in-95 duration-200 ${
-              isDark ? 'bg-[#111111] border-rose-500/40 text-white' : 'bg-white border-rose-500/45 text-slate-900'
-            }`}
+          <div
+            className={`w-full max-w-md border p-6 space-y-6 rounded-none shadow-2xl relative animate-in zoom-in-95 duration-200 ${isDark ? 'bg-[#111111] border-rose-500/40 text-white' : 'bg-white border-rose-500/45 text-slate-900'
+              }`}
           >
             {/* Warning Header */}
             <div className="flex items-center gap-3 border-b border-rose-500/20 pb-4">
@@ -1143,3 +1128,4 @@ const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole = '
 };
 
 export default Dashboard;
+

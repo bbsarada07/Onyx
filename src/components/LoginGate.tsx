@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Sun, 
-  Moon, 
-  Eye, 
-  EyeOff, 
-  ShieldCheck, 
+import {
+  Sun,
+  Moon,
+  Eye,
+  EyeOff,
+  ShieldCheck,
   AlertTriangle,
   Terminal,
   Activity,
@@ -25,7 +25,7 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
   const [passphrase, setPassphrase] = useState('');
   const [showPassphrase, setShowPassphrase] = useState(false);
   const [selectedRole, setSelectedRole] = useState('Compliance Officer');
-  
+
   // States
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,17 +40,17 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
     // Clear existing timeouts
     bootTimeoutsRef.current.forEach(clearTimeout);
     bootTimeoutsRef.current = [];
-    
+
     setBootSequence('m1');
-    
+
     const t1 = window.setTimeout(() => {
       setBootSequence('m2');
     }, 300);
-    
+
     const t2 = window.setTimeout(() => {
       setBootSequence('m3');
     }, 600);
-    
+
     bootTimeoutsRef.current = [t1, t2];
   };
 
@@ -123,8 +123,17 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
       }, index * 300);
     });
 
-    // Success redirect
+    // Success redirect logic with explicit LocalStorage serialization
     setTimeout(() => {
+      try {
+        // Cache the active domain authorization role token into persistent memory
+        localStorage.setItem("onyx_user_role", selectedRole);
+        console.log(`[Access Gateway Handshake] Saved Authentication Key: ${selectedRole}`);
+      } catch (err) {
+        console.error("[Access Gateway] Failed writing token payload to storage cache context", err);
+      }
+
+      // Fire authorized fallback listener function to swap app route views
       onAuthSuccess();
     }, logs.length * 300 + 200);
   };
@@ -144,7 +153,7 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
   };
 
   const accent = getRoleAccentColor(selectedRole);
-  
+
   // Tailwind class variables for accent styling
   const accentBtnBg = {
     cyan: 'bg-cyan-500 hover:bg-cyan-600 focus:ring-cyan-500/20 text-black',
@@ -165,20 +174,18 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
   }[accent];
 
   return (
-    <div className={`w-full min-h-screen flex flex-col md:flex-row overflow-hidden font-sans select-none transition-colors duration-300 ${
-      isDark ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-slate-900'
-    }`}>
-      
+    <div className={`w-full min-h-screen flex flex-col md:flex-row overflow-hidden font-sans select-none transition-colors duration-300 ${isDark ? 'bg-[#0A0A0A] text-white' : 'bg-[#FAFAFA] text-slate-900'
+      }`}>
+
       {/* Absolute Header Theme Selector */}
       <div className="absolute top-6 right-6 z-50">
         <button
           type="button"
           onClick={() => setIsDark(!isDark)}
-          className={`p-2.5 rounded-none border transition-all ${
-            isDark 
-              ? 'bg-neutral-900 border-neutral-800/80 hover:bg-neutral-800 text-white' 
-              : 'bg-white border-gray-200 hover:bg-slate-50 text-slate-600'
-          }`}
+          className={`p-2.5 rounded-none border transition-all ${isDark
+            ? 'bg-neutral-900 border-neutral-800/80 hover:bg-neutral-800 text-white'
+            : 'bg-white border-gray-200 hover:bg-slate-50 text-slate-600'
+            }`}
           title="Toggle System Theme"
         >
           {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -186,15 +193,14 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
       </div>
 
       {/* LEFT PANEL: The Brand Side */}
-      <section className={`w-full md:w-1/2 flex flex-col justify-between p-8 md:p-16 border-b md:border-b-0 md:border-r transition-colors duration-300 ${
-        isDark 
-          ? 'bg-[#050505] border-[#1F1F1F]' 
-          : 'bg-[#F5F5F4] border-[#E2E8F0]'
-      }`}>
-        
+      <section className={`w-full md:w-1/2 flex flex-col justify-between p-8 md:p-16 border-b md:border-b-0 md:border-r transition-colors duration-300 ${isDark
+        ? 'bg-[#050505] border-[#1F1F1F]'
+        : 'bg-[#F5F5F4] border-[#E2E8F0]'
+        }`}>
+
         {/* Brand Header */}
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <div 
+          <div
             className="flex items-center gap-3 cursor-pointer group"
             onMouseEnter={triggerBootSequence}
             onMouseLeave={resetBootSequence}
@@ -212,20 +218,17 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
                   repeat: Infinity,
                   ease: "easeInOut"
                 }}
-                className={`absolute inset-0 rounded-full border-2 ${
-                  bootSequence !== 'idle' ? 'border-cyan-400 dark:border-cyan-400' : 'border-slate-400/30 dark:border-neutral-800'
-                } transition-colors duration-300`}
+                className={`absolute inset-0 rounded-full border-2 ${bootSequence !== 'idle' ? 'border-cyan-400 dark:border-cyan-400' : 'border-slate-400/30 dark:border-neutral-800'
+                  } transition-colors duration-300`}
               />
-              <div className={`w-4 h-4 rounded-full border-2 ${
-                bootSequence !== 'idle' 
-                  ? 'border-cyan-400 bg-cyan-400/10' 
-                  : (isDark ? 'border-white bg-white/5' : 'border-slate-800 bg-slate-800/5')
-              } transition-colors duration-300`} />
+              <div className={`w-4 h-4 rounded-full border-2 ${bootSequence !== 'idle'
+                ? 'border-cyan-400 bg-cyan-400/10'
+                : (isDark ? 'border-white bg-white/5' : 'border-slate-800 bg-slate-800/5')
+                } transition-colors duration-300`} />
             </div>
             {/* tracked premium serif/sans hybrid typography */}
-            <span className={`font-sans font-bold tracking-[0.25em] text-[15px] transition-colors duration-300 ${
-              bootSequence !== 'idle' ? 'text-cyan-400 dark:text-cyan-400' : 'text-current'
-            }`}>
+            <span className={`font-sans font-bold tracking-[0.25em] text-[15px] transition-colors duration-300 ${bootSequence !== 'idle' ? 'text-cyan-400 dark:text-cyan-400' : 'text-current'
+              }`}>
               ONYX
             </span>
           </div>
@@ -246,18 +249,16 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
             Onyx
           </h1>
           <p className={`text-[14px] leading-relaxed tracking-tight ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-            The next-generation, high-fidelity FinTech orchestration workspace. 
+            The next-generation, high-fidelity FinTech orchestration workspace.
             Ingest unstructured compliance data, monitor risks dynamically, and execute complex workflows through secure autonomous agents.
           </p>
 
           {/* Interactive Agent Node Wireframe */}
-          <div className={`relative border p-6 rounded-none my-4 overflow-hidden transition-all duration-300 ${
-            isDark ? 'bg-black/40 border-neutral-900' : 'bg-white/50 border-slate-200'
-          }`}>
+          <div className={`relative border p-6 rounded-none my-4 overflow-hidden transition-all duration-300 ${isDark ? 'bg-black/40 border-neutral-900' : 'bg-white/50 border-slate-200'
+            }`}>
             <div className="absolute top-2 left-3 flex items-center gap-1.5">
-              <Activity className={`w-3.5 h-3.5 animate-pulse ${
-                bootSequence !== 'idle' ? 'text-cyan-400' : accentText
-              }`} />
+              <Activity className={`w-3.5 h-3.5 animate-pulse ${bootSequence !== 'idle' ? 'text-cyan-400' : accentText
+                }`} />
               <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest font-bold">Handshake Architecture Flow</span>
             </div>
 
@@ -265,7 +266,6 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
             <div className="w-full h-44 mt-4 flex items-center justify-center">
               <svg viewBox="0 0 380 180" className="w-full h-full">
                 {/* Connection lines */}
-                {/* Document to Orchestrator */}
                 <motion.line
                   x1="55" y1="90" x2="180" y2="90"
                   stroke={bootSequence !== 'idle' ? '#22d3ee' : (isDark ? '#262626' : '#E2E8F0')}
@@ -273,8 +273,7 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
                   strokeDasharray="4 4"
                   className="transition-colors duration-300"
                 />
-                
-                {/* Orchestrator to Processor Node (Top) */}
+
                 <motion.path
                   d="M 180 90 C 230 90, 230 40, 315 40"
                   fill="none"
@@ -284,7 +283,6 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
                   className="transition-colors duration-300"
                 />
 
-                {/* Orchestrator to Router Node (Middle) */}
                 <motion.line
                   x1="180" y1="90" x2="315" y2="90"
                   stroke={bootSequence === 'm2' || bootSequence === 'm3' ? '#22d3ee' : (isDark ? '#262626' : '#E2E8F0')}
@@ -293,7 +291,6 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
                   className="transition-colors duration-300"
                 />
 
-                {/* Gateway to Vault Node (Bottom) */}
                 <motion.path
                   d="M 180 90 C 230 90, 230 140, 315 140"
                   fill="none"
@@ -303,7 +300,7 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
                   className="transition-colors duration-300"
                 />
 
-                {/* Animated traveling dots on paths */}
+                {/* Animated dots on paths */}
                 <motion.circle
                   r="3.5"
                   fill={bootSequence !== 'idle' ? '#22d3ee' : (isDark ? '#444' : '#94a3b8')}
@@ -364,19 +361,18 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
                 />
 
                 {/* Document Node */}
-                <g 
+                <g
                   className="cursor-pointer"
                   onMouseEnter={() => setHoveredNode('Document')}
                   onMouseLeave={() => setHoveredNode(null)}
                 >
-                  <circle 
-                    cx="55" cy="90" r="18" 
-                    fill={isDark ? '#111111' : '#FFFFFF'} 
-                    stroke={hoveredNode === 'Document' || bootSequence !== 'idle' ? '#22d3ee' : (isDark ? '#333' : '#CCC')} 
-                    strokeWidth="1.5" 
-                    className="transition-all duration-300" 
+                  <circle
+                    cx="55" cy="90" r="18"
+                    fill={isDark ? '#111111' : '#FFFFFF'}
+                    stroke={hoveredNode === 'Document' || bootSequence !== 'idle' ? '#22d3ee' : (isDark ? '#333' : '#CCC')}
+                    strokeWidth="1.5"
+                    className="transition-all duration-300"
                   />
-                  {/* Document Path Icon */}
                   <g stroke={hoveredNode === 'Document' || bootSequence !== 'idle' ? '#22d3ee' : '#94a3b8'} strokeWidth="1.5" fill="none" className="transition-colors duration-300">
                     <path d="M49,81 L57,81 L61,85 L61,99 L49,99 Z" />
                     <path d="M57,81 L57,85 L61,85" />
@@ -387,7 +383,7 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
                 </g>
 
                 {/* Orchestrator Node */}
-                <motion.g 
+                <motion.g
                   className="cursor-pointer"
                   onMouseEnter={() => setHoveredNode('Gateway')}
                   onMouseLeave={() => setHoveredNode(null)}
@@ -396,14 +392,13 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
                   }}
                   transition={{ duration: 0.3 }}
                 >
-                  <circle 
-                    cx="180" cy="90" r="20" 
-                    fill={isDark ? '#111111' : '#FFFFFF'} 
-                    stroke={hoveredNode === 'Gateway' || bootSequence === 'm2' || bootSequence === 'm3' ? '#22d3ee' : (isDark ? '#333' : '#CCC')} 
-                    strokeWidth="1.5" 
-                    className="transition-all duration-300" 
+                  <circle
+                    cx="180" cy="90" r="20"
+                    fill={isDark ? '#111111' : '#FFFFFF'}
+                    stroke={hoveredNode === 'Gateway' || bootSequence === 'm2' || bootSequence === 'm3' ? '#22d3ee' : (isDark ? '#333' : '#CCC')}
+                    strokeWidth="1.5"
+                    className="transition-all duration-300"
                   />
-                  {/* Orchestrator gear / dial Icon */}
                   <g stroke={hoveredNode === 'Gateway' || bootSequence === 'm2' || bootSequence === 'm3' ? '#22d3ee' : '#94a3b8'} strokeWidth="1.5" fill="none" className="transition-colors duration-300">
                     <circle cx="180" cy="90" r="7" />
                     <circle cx="180" cy="90" r="2" fill="currentColor" />
@@ -415,19 +410,18 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
                 </motion.g>
 
                 {/* Processor Node (Top Right) */}
-                <g 
+                <g
                   className="cursor-pointer"
                   onMouseEnter={() => setHoveredNode('Analyst')}
                   onMouseLeave={() => setHoveredNode(null)}
                 >
-                  <circle 
-                    cx="315" cy="40" r="16" 
-                    fill={bootSequence === 'm3' ? 'rgba(34, 211, 238, 0.08)' : (isDark ? '#111111' : '#FFFFFF')} 
-                    stroke={hoveredNode === 'Analyst' || bootSequence === 'm3' ? '#22d3ee' : (isDark ? '#333' : '#CCC')} 
-                    strokeWidth="1.5" 
-                    className="transition-all duration-300" 
+                  <circle
+                    cx="315" cy="40" r="16"
+                    fill={bootSequence === 'm3' ? 'rgba(34, 211, 238, 0.08)' : (isDark ? '#111111' : '#FFFFFF')}
+                    stroke={hoveredNode === 'Analyst' || bootSequence === 'm3' ? '#22d3ee' : (isDark ? '#333' : '#CCC')}
+                    strokeWidth="1.5"
+                    className="transition-all duration-300"
                   />
-                  {/* CPU microchip Icon */}
                   <g stroke={hoveredNode === 'Analyst' || bootSequence === 'm3' ? '#22d3ee' : '#94a3b8'} strokeWidth="1.5" fill="none" className="transition-colors duration-300">
                     <rect x="307" y="32" width="16" height="16" rx="2" />
                     <line x1="311" y1="29" x2="311" y2="32" strokeWidth="1" />
@@ -439,26 +433,25 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
                     <line x1="304" y1="36" x2="307" y2="36" strokeWidth="1" />
                     <line x1="304" y1="40" x2="307" y2="40" strokeWidth="1" />
                     <line x1="304" y1="44" x2="307" y2="44" strokeWidth="1" />
-                    <line x1="323" y1="36" x2="326" y2="36" strokeWidth="1" />
-                    <line x1="323" y1="40" x2="326" y2="40" strokeWidth="1" />
-                    <line x1="323" y1="44" x2="326" y2="44" strokeWidth="1" />
+                    <line x1="323" y1="36" x2="327" y2="36" strokeWidth="1" />
+                    <line x1="323" y1="40" x2="327" y2="40" strokeWidth="1" />
+                    <line x1="323" y1="44" x2="327" y2="44" strokeWidth="1" />
                   </g>
                 </g>
 
                 {/* Router Node (Middle Right) */}
-                <g 
+                <g
                   className="cursor-pointer"
                   onMouseEnter={() => setHoveredNode('Orchestrator')}
                   onMouseLeave={() => setHoveredNode(null)}
                 >
-                  <circle 
-                    cx="315" cy="90" r="16" 
-                    fill={bootSequence === 'm3' ? 'rgba(34, 211, 238, 0.08)' : (isDark ? '#111111' : '#FFFFFF')} 
-                    stroke={hoveredNode === 'Orchestrator' || bootSequence === 'm3' ? '#22d3ee' : (isDark ? '#333' : '#CCC')} 
-                    strokeWidth="1.5" 
-                    className="transition-all duration-300" 
+                  <circle
+                    cx="315" cy="90" r="16"
+                    fill={bootSequence === 'm3' ? 'rgba(34, 211, 238, 0.08)' : (isDark ? '#111111' : '#FFFFFF')}
+                    stroke={hoveredNode === 'Orchestrator' || bootSequence === 'm3' ? '#22d3ee' : (isDark ? '#333' : '#CCC')}
+                    strokeWidth="1.5"
+                    className="transition-all duration-300"
                   />
-                  {/* Cross-Router Arrows Icon */}
                   <g stroke={hoveredNode === 'Orchestrator' || bootSequence === 'm3' ? '#22d3ee' : '#94a3b8'} strokeWidth="1.5" fill="none" className="transition-colors duration-300">
                     <circle cx="315" cy="90" r="3" />
                     <line x1="306" y1="90" x2="312" y2="90" />
@@ -471,19 +464,18 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
                 </g>
 
                 {/* Vault Node (Bottom Right) */}
-                <g 
+                <g
                   className="cursor-pointer"
                   onMouseEnter={() => setHoveredNode('Writer')}
                   onMouseLeave={() => setHoveredNode(null)}
                 >
-                  <circle 
-                    cx="315" cy="140" r="16" 
-                    fill={bootSequence === 'm3' ? 'rgba(34, 211, 238, 0.08)' : (isDark ? '#111111' : '#FFFFFF')} 
-                    stroke={hoveredNode === 'Writer' || bootSequence === 'm3' ? '#22d3ee' : (isDark ? '#333' : '#CCC')} 
-                    strokeWidth="1.5" 
-                    className="transition-all duration-300" 
+                  <circle
+                    cx="315" cy="140" r="16"
+                    fill={bootSequence === 'm3' ? 'rgba(34, 211, 238, 0.08)' : (isDark ? '#111111' : '#FFFFFF')}
+                    stroke={hoveredNode === 'Writer' || bootSequence === 'm3' ? '#22d3ee' : (isDark ? '#333' : '#CCC')}
+                    strokeWidth="1.5"
+                    className="transition-all duration-300"
                   />
-                  {/* Vault dial lock Icon */}
                   <g stroke={hoveredNode === 'Writer' || bootSequence === 'm3' ? '#22d3ee' : '#94a3b8'} strokeWidth="1.5" fill="none" className="transition-colors duration-300">
                     <rect x="307" y="132" width="16" height="16" rx="2" />
                     <circle cx="315" cy="140" r="4" />
@@ -496,10 +488,9 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
               </svg>
             </div>
 
-            {/* Hover Tooltip Overlay inside visual card */}
-            <div className={`mt-2 h-8 text-center text-xs font-mono font-bold tracking-tight transition-colors duration-200 ${
-              bootSequence === 'm3' ? 'text-green-500' : (isDark ? 'text-slate-400' : 'text-slate-600')
-            }`}>
+            {/* Hover Tooltip Overlay */}
+            <div className={`mt-2 h-8 text-center text-xs font-mono font-bold tracking-tight transition-colors duration-200 ${bootSequence === 'm3' ? 'text-green-500' : (isDark ? 'text-slate-400' : 'text-slate-600')
+              }`}>
               <AnimatePresence mode="wait">
                 {bootSequence === 'm3' ? (
                   <motion.span initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} key="verified">
@@ -544,7 +535,7 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
       {/* RIGHT PANEL: The Input Side */}
       <section className="w-full md:w-1/2 flex flex-col justify-center items-center p-8 md:p-16 relative">
         <div className="w-full max-w-[420px] flex flex-col gap-8 relative">
-          
+
           {/* Headline */}
           <div className="flex flex-col gap-2">
             <h2 className="text-2xl font-bold tracking-tight">Access Gateway</h2>
@@ -573,7 +564,7 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            
+
             {/* Email Field */}
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-mono">
@@ -586,11 +577,10 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
                   disabled={isSubmitting}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-none border outline-none font-medium text-[13px] transition-all bg-transparent ${
-                    isDark 
-                      ? 'border-neutral-800 text-white placeholder-slate-600 focus:border-white' 
-                      : 'border-slate-200 text-slate-900 placeholder-slate-400 focus:border-black'
-                  }`}
+                  className={`w-full px-4 py-3 rounded-none border outline-none font-medium text-[13px] transition-all bg-transparent ${isDark
+                    ? 'border-neutral-800 text-white placeholder-slate-600 focus:border-white'
+                    : 'border-slate-200 text-slate-900 placeholder-slate-400 focus:border-black'
+                    }`}
                 />
               </div>
             </div>
@@ -609,11 +599,10 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
                   disabled={isSubmitting}
                   value={passphrase}
                   onChange={(e) => setPassphrase(e.target.value)}
-                  className={`w-full pl-4 pr-12 py-3 rounded-none border outline-none font-medium text-[13px] tracking-tight transition-all bg-transparent ${
-                    isDark 
-                      ? 'border-neutral-800 text-white placeholder-slate-600 focus:border-white' 
-                      : 'border-slate-200 text-slate-900 placeholder-slate-400 focus:border-black'
-                  }`}
+                  className={`w-full pl-4 pr-12 py-3 rounded-none border outline-none font-medium text-[13px] tracking-tight transition-all bg-transparent ${isDark
+                    ? 'border-neutral-800 text-white placeholder-slate-600 focus:border-white'
+                    : 'border-slate-200 text-slate-900 placeholder-slate-400 focus:border-black'
+                    }`}
                 />
                 <button
                   type="button"
@@ -631,7 +620,7 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-mono">
                 Select Domain Authorization Role
               </label>
-              
+
               <div className="grid grid-cols-1 gap-2">
                 {[
                   { name: 'Compliance Officer', desc: 'Oversees rule checks & map pipelines' },
@@ -640,8 +629,7 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
                 ].map((role) => {
                   const isActive = selectedRole === role.name;
                   const isRoleAccent = getRoleAccentColor(role.name);
-                  
-                  // Accent borders for selectors
+
                   const activeBorder = {
                     cyan: 'border-cyan-500/60 bg-cyan-500/5',
                     rose: 'border-rose-500/60 bg-rose-500/5',
@@ -660,19 +648,17 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
                       type="button"
                       disabled={isSubmitting}
                       onClick={() => setSelectedRole(role.name)}
-                      className={`w-full flex items-center justify-between p-3.5 border rounded-none text-left transition-all ${
-                        isActive 
-                          ? `${activeBorder}` 
-                          : (isDark ? 'border-neutral-900/60 bg-neutral-900/30 text-slate-400 hover:border-neutral-800' : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-slate-200')
-                      }`}
+                      className={`w-full flex items-center justify-between p-3.5 border rounded-none text-left transition-all ${isActive
+                        ? `${activeBorder}`
+                        : (isDark ? 'border-neutral-900/60 bg-neutral-900/30 text-slate-400 hover:border-neutral-800' : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-slate-200')
+                        }`}
                     >
                       <div>
                         <p className={`text-[12px] font-bold ${isActive ? 'text-current' : ''}`}>{role.name}</p>
                         <p className="text-[10px] text-slate-500 mt-0.5">{role.desc}</p>
                       </div>
-                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                        isActive ? `${activeIcon} border-current` : 'border-slate-400'
-                      }`}>
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isActive ? `${activeIcon} border-current` : 'border-slate-400'
+                        }`}>
                         {isActive && <div className="w-2 h-2 rounded-full bg-current" />}
                       </div>
                     </button>
@@ -698,9 +684,8 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
               type="button"
               disabled={isSubmitting}
               onClick={handleAutofill}
-              className={`text-[11px] font-mono tracking-tight font-bold hover:underline transition-colors ${
-                isDark ? 'text-neutral-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-700'
-              }`}
+              className={`text-[11px] font-mono tracking-tight font-bold hover:underline transition-colors ${isDark ? 'text-neutral-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-700'
+                }`}
             >
               [CLICK TO AUTOFILL DEMO CREDENTIALS]
             </button>
@@ -723,7 +708,7 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
                     </div>
                     <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
                   </div>
-                  
+
                   <div className="space-y-2.5 text-[11px] leading-relaxed text-slate-300 select-text overflow-y-auto max-h-[220px] custom-scrollbar">
                     {terminalLogs.map((log, index) => (
                       <motion.p
