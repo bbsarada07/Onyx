@@ -31,20 +31,20 @@ interface DashboardProps {
   userRole?: string; // Kept for compatibility, but overridden by localStorage state
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark }) => {
+const Dashboard: React.FC<DashboardProps> = ({ onShowToast, isDark, userRole: propRole }) => {
   const baseUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
   // --- Dynamic Role State Interceptor ---
-  const [userRole, setUserRole] = useState<string>('Compliance Officer');
+  const [userRole, setUserRole] = useState<string>(() => {
+    return localStorage.getItem("onyx_user_role") || propRole || 'Compliance Officer';
+  });
 
   useEffect(() => {
     // Read the serialized credential token from login gate selection
-    const savedRole = localStorage.getItem("onyx_user_role");
-    if (savedRole) {
-      setUserRole(savedRole);
-      console.log(`[Dashboard Module Workspace] Session active under identity: ${savedRole}`);
-    }
-  }, []);
+    const activeRole = localStorage.getItem("onyx_user_role") || propRole || 'Compliance Officer';
+    setUserRole(activeRole);
+    console.log("[Dashboard Engine] Workspace view initialized dynamically for: ", activeRole);
+  }, [propRole]);
 
   // --- Compliance Officer States ---
   const [data, setData] = useState<ActionPoint[]>([]);

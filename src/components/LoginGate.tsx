@@ -15,7 +15,7 @@ import {
 interface LoginGateProps {
   isDark: boolean;
   setIsDark: (isDark: boolean) => void;
-  onAuthSuccess: () => void;
+  onAuthSuccess: (role: string) => void;
   onRoleSelect: (role: string) => void;
 }
 
@@ -133,8 +133,10 @@ export default function LoginGate({ isDark, setIsDark, onAuthSuccess, onRoleSele
         console.error("[Access Gateway] Failed writing token payload to storage cache context", err);
       }
 
+      const chosenRole = selectedRole;
+      console.log("[Access Gate Engine] Routing session transition for role: ", chosenRole);
       // Fire authorized fallback listener function to swap app route views
-      onAuthSuccess();
+      onAuthSuccess(selectedRole);
     }, logs.length * 300 + 200);
   };
 

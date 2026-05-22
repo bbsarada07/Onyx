@@ -12,7 +12,7 @@ function App() {
     return localStorage.getItem('onyx_theme') !== 'light';
   });
   const [userRole, setUserRole] = useState(() => {
-    return localStorage.getItem('onyx_role') || 'Compliance Officer';
+    return localStorage.getItem('onyx_user_role') || 'Compliance Officer';
   });
   const [isInitializing, setIsInitializing] = useState(false);
 
@@ -28,12 +28,14 @@ function App() {
 
   const handleAuthSuccess = (role: string) => {
     localStorage.setItem('onyx_auth', 'true');
-    localStorage.setItem('onyx_role', role);
+    localStorage.setItem('onyx_user_role', role);
     setUserRole(role);
     setIsInitializing(true);
     
     // Explicit RBAC console handshake log
     console.log(`[RBAC Handshake] Authenticated Role: ${role} - Injecting Module Array`);
+    const chosenRole = role;
+    console.log("[Access Gate Engine] Routing session transition for role: ", chosenRole);
     
     setTimeout(() => {
       setIsInitializing(false);
@@ -43,7 +45,7 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('onyx_auth');
-    localStorage.removeItem('onyx_role');
+    localStorage.removeItem('onyx_user_role');
     setIsAuthenticated(false);
     setIsInitializing(true);
     setTimeout(() => {
@@ -146,7 +148,7 @@ function App() {
             <LoginGate 
               isDark={isDark} 
               setIsDark={setIsDark} 
-              onAuthSuccess={() => handleAuthSuccess(userRole)} 
+              onAuthSuccess={(role) => handleAuthSuccess(role)} 
               onRoleSelect={setUserRole} 
             />
           </motion.div>
